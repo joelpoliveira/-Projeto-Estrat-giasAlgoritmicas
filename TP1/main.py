@@ -1,9 +1,6 @@
 from sys import stdin, stdout
 
 
-# def read_all():
-#     return stdin.readlines()
-    
 def readln():
     return stdin.readline().rstrip()
     
@@ -13,43 +10,40 @@ def outln(n, end = '\n'):
 
 class Piece:
     numbers = []
-    rows = 0
-    cols = 0
     
-    def __init__(self, rows, cols):
-        self.numbers = [[j for j in range(cols)] for i in range(rows)]
-        self.rows = rows
-        self.cols = cols
+    def __init__(self):
+        array = readln().split(' ')
+        self.numbers = [[array[0], array[1]], [array[3], array[2]]]
         #print("Created: ", self.numbers)
-    
-    def print_row(self, n):
-        for i in range(self.cols):
-            print(self.numbers[n][i], end = ' ')
     
     # just for debug
     def __str__(self):
         return ''.join(str(i) for i in self.numbers)
-
-
+    
+    def print_row(self, n):
+        for i in range(2):
+            print(self.numbers[n][i], end = ' ')
+    
+    def rotate(self):
+        pass
+    
+    
 class Board:    
     board = []
     rows = 0
     cols = 0
     
     def __init__(self, rows, cols):
-        self.board = [[Piece(rows, cols) for j in range(cols)] for i in range(rows)]
+        self.board = [[Piece() for j in range(cols)] for i in range(rows)]
         self.rows = rows
         self.cols = cols
      
     def print_board(self):
-        #print(self.board)
-        #print("-----------------")
-        # iterate each piece
         for i in range(self.rows):
-            for j in range(self.rows):
+            for j in range(2):
                 for x in range(self.cols):
                     self.board[i][x].print_row(j)
-                    print('', end = '  ')
+                    print('', end = ' ')
                 print('\n') if j == self.rows - 1 and i != self.rows - 1 else print()
     
     def solve(self):
