@@ -24,7 +24,8 @@ class Piece:
         for i in range(2):
             print(self.numbers[n][i], end = ' ')
     
-    def rotate(self):
+    def rotate(self, n):
+        # rotate n times to the right. alguma maneira melhor para rotação?
         pass
     
     
