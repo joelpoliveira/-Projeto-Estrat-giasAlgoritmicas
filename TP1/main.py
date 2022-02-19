@@ -42,18 +42,15 @@ class Board:
         self.cols = cols
      
     def print_board(self):
+        #print(self.board)
+        #print("-----------------")
         # iterate each piece
         for i in range(self.rows):
-            for j in range(self.cols):
-                #  iterate each row of a piece
-                if self.rows == 1:
-                        self.board[i][j].print_row(0)
-                        print('', end = '  ')
-                else:
-                    for x in range(self.cols):
-                        self.board[i][j].print_row(x)
-                        print('', end = '  ')
-                    print('\n') if j == self.cols - 1 and i != self.rows - 1 else print()
+            for j in range(self.rows):
+                for x in range(self.cols):
+                    self.board[i][x].print_row(j)
+                    print('', end = '  ')
+                print('\n') if j == self.rows - 1 and i != self.rows - 1 else print()
     
     def solve(self):
         pass
