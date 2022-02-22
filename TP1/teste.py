@@ -16,13 +16,8 @@ class Piece:
         self.numbers = [[array[0], array[1]], [array[3], array[2]]]
         #print("Created: ", self.numbers)
     
-    # just for debug
-    def __str__(self):
-        return ''.join(str(i) for i in self.numbers)
-    
-    def print_row(self, n):
-        for i in range(2):
-            outln(self.numbers[n][i], end = ' ')
+    def row(self, n):
+        return ' '.join(self.numbers[n])
     
     def rotate(self):
         temp = self.numbers
@@ -34,6 +29,8 @@ class Piece:
     def match_left(self, piece):
         return (self.numbers[0][0] == piece.numbers[0][1]) and (self.numbers[1][0] == piece.numbers[1][1]) 
 
+    def copy(self):
+        return Piece([self.numbers[0][0], self.numbers[0][1], self.numbers[1][1], self.numbers[1][0]])
 class Board:    
     def __init__(self, rows, cols, first_piece):
         self.board = [[None for i in range(cols)] for j in range(rows)]
@@ -42,7 +39,18 @@ class Board:
         self.cols = cols
         self.next_empty = 1
      
-    def print_board(self):
+    def __str__(self):
+        r = []
+        for i in range(self.rows):
+            for k in range(2):
+                line = ""
+                for j in range(self.cols):
+                    line += self.board[i][j].row(k) + "  "
+                r.append( line.rstrip() )
+            r.append("")
+        return '\n'.join(r)
+
+    def debug_outln(self):
         for i in range(self.rows):
             for j in range(2):
                 for x in range(self.cols):
@@ -52,7 +60,7 @@ class Board:
                         print("|_|", end = '')
                     outln('', end = ' ')
                 outln('\n') if j == self.rows - 1 and i != self.rows - 1 else outln()
-    
+
     def get_next(self):
         row = self.next_empty//self.cols
         col = self.next_empty%self.cols
@@ -109,9 +117,6 @@ class Board:
         return new_b
     
 def resolve(board, pieces_to_use, used_pieces):
-	#board.print_board()
-	#print(board.is_complete())
-
 	pieces_to_use+=used_pieces
 	used_pieces.clear()
 
@@ -122,8 +127,7 @@ def resolve(board, pieces_to_use, used_pieces):
 			#try all piece rotations
 			for _ in range(4):
 				if (board.piece_fits(pieces_to_use[0])):
-					piece = pieces_to_use.popleft()
-					board.insert(piece)
+					board.insert( pieces_to_use.popleft() )
 
 					#piece fits, try next
 					resolved = resolve(board, pieces_to_use.copy(), used_pieces.copy())
@@ -131,10 +135,8 @@ def resolve(board, pieces_to_use, used_pieces):
 					if resolved:
 						return resolved
 					else:
-						pieces_to_use.append(board.pop())
-
-				else:
-					pieces_to_use[0].rotate()
+						pieces_to_use.appendleft( board.pop() )
+				pieces_to_use[0].rotate()
 
 			used_pieces.append( pieces_to_use.popleft() )
 			
@@ -142,6 +144,8 @@ def resolve(board, pieces_to_use, used_pieces):
 			if board.is_complete():
 				return True
 			return False
+
+
 
 if __name__ == "__main__":
     # number of board to solve
@@ -161,11 +165,6 @@ if __name__ == "__main__":
 			pieces_to_use.append( Piece( readln().split() ) )
 
 		if resolve(board, pieces_to_use, used_pieces):
-			board.print_board()
+			outln(board, end = "")
 		else:
 			outln("impossible puzzle!")
-		
-    #Board.test()
-    
-    #Board.solve()
-    #Board.check()
