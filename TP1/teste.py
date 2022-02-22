@@ -19,6 +19,10 @@ class Piece:
     def row(self, n):
         return ' '.join(self.numbers[n])
     
+    def print_row(self, n):
+        for i in range(2):
+            outln(self.numbers[n][i], end = " ")
+    
     def rotate(self):
         temp = self.numbers
         self.numbers = [[temp[1][0], temp[0][0]], [temp[1][1], temp[0][1]]]
@@ -145,26 +149,49 @@ def resolve(board, pieces_to_use, used_pieces):
 				return True
 			return False
 
+def resolve2(board, pieces):
+    if board.is_complete():
+        return True
+
+    next_cases = {}
+    for i in range(len(pieces)):
+        for _ in range(4):
+            if board.piece_fits(pieces[i]):
+                piece = pieces[i].copy()
+                next_cases[piece] = pieces[:i] + pieces[i+1:]
+            pieces[i].rotate()
+    
+
+    for piece, next_pieces in next_cases.items():
+        board.insert(piece)
+        result = resolve2(board, next_pieces)
+        if result:
+            return True
+        board.pop()
+    return False
+
 
 
 if __name__ == "__main__":
     # number of board to solve
-	n = int(readln())
-    
-	# Number of pieces, Rows, Cols
-	for _ in range(n):
-		pieces_to_use = deque()
-		used_pieces = deque()
+    n = int(readln())
 
-		N, R, C = list(map(int, readln().split()))
+    # Number of pieces, Rows, Cols
+    for _ in range(n):
+        #pieces_to_use = deque()
+        pieces_to_use = []
+        used_pieces = deque()
 
-		first_piece = Piece(readln().split())
-		# Create Board
-		board = Board(R, C, first_piece)
-		for _2 in range(N - 1):
-			pieces_to_use.append( Piece( readln().split() ) )
+        N, R, C = list(map(int, readln().split()))
 
-		if resolve(board, pieces_to_use, used_pieces):
-			outln(board, end = "")
-		else:
-			outln("impossible puzzle!")
+        first_piece = Piece(readln().split())
+        # Create Board
+        board = Board(R, C, first_piece)
+        for __ in range(N - 1):
+            pieces_to_use.append( Piece( readln().split() ) )
+
+        #if resolve(board, pieces_to_use, used_pieces):
+        if resolve2(board, pieces_to_use):
+            outln(board, end = "")
+        else:
+            outln("impossible puzzle!")
