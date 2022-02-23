@@ -15,6 +15,7 @@ def outln(n = '', end = '\n'):
 class Piece:    
     def __init__(self, array):
         self.numbers = [[array[0], array[1]], [array[3], array[2]]]
+        self.diff_numbers = set(array)
         #print("Created: ", self.numbers)
     
     def row(self, n):
@@ -49,12 +50,12 @@ class Piece:
         return Piece([self.numbers[0][0], self.numbers[0][1], self.numbers[1][1], self.numbers[1][0]])
 
     def get_probable(self, pieces):
-        probable = []
-        for i in range(len(pieces)):
-            if self == pieces[i]:
+        probable = set()
+        for piece in pieces:
+            if self == piece:
                 continue
-            elif self.diff_numbers.intersection(pieces[i].diff_numbers)!=set():
-                probable.append(pieces[i])
+            elif self.diff_numbers.intersection(piece.diff_numbers)!=set():
+                probable.add(piece)
         return probable
 
 class Board:    
@@ -141,55 +142,54 @@ class Board:
         new_b = Board(self.rows, self.cols, self.board[0][0])
         new_b.board = self.board.copy()
         return new_b
+
+def resolve(board, pieces, possible_pieces):
+    if len(possible_pieces) == 0 or len(pieces) == 0:
+        if board.is_complete():
+            return True
+        return False
+
+    next_cases = {}
+    for piece in possible_pieces:
+        for _ in range(4):
+            if board.piece_fits(piece.rotate(_)):
+
+                next_cases[piece] = next_cases.get(piece, []) + [(_, piece.get_probable(pieces) )]
     
-def resolve(board, pieces_to_use, used_pieces):
-	pieces_to_use+=used_pieces
-	used_pieces.clear()
 
-	while True:
-		#bool(empty list) = False
-		if pieces_to_use:
-			resolved = False
-			#try all piece rotations
-			for _ in range(4):
-				if (board.piece_fits(pieces_to_use[0].rotate(_))):
-					board.insert( pieces_to_use.popleft().rotate(_) )
+    for piece, cases in next_cases.items():
+        for tuple in cases:
+            orient, next_pieces = tuple
+            board.insert(piece.rotate(orient))
+            pieces.remove(piece)
+            result = resolve(board, pieces, next_pieces)
+            if result:
+                return True
+            pieces.add(piece)
+            board.pop()
 
-					#piece fits, try next
-					resolved = resolve(board, pieces_to_use.copy(), used_pieces.copy())
+    return False
 
-					if resolved:
-						return resolved
-					else:
-						pieces_to_use.appendleft( board.pop() )
 
-			used_pieces.append( pieces_to_use.popleft() )
-			
-		else:			
-			if board.is_complete():
-				return True
-			return False
 
 if __name__ == "__main__":
+    # number of board to solve
     n = int(readln())
 
     # Number of pieces, Rows, Cols
     for _ in range(n):
-        pieces_to_use = deque() # to resolve uncomment this
-        used_pieces = deque()
-
-
         N, R, C = list(map(int, readln().split()))
 
         first_piece = Piece(readln().split())
         # Create Board
         board = Board(R, C, first_piece)
-        for __ in range(N - 1):
-            pieces_to_use.append( Piece( readln().split() ) )
-        start = time()
+
+        pieces_to_use = {Piece( readln().split() ) for __ in range(N - 1)}
+
         #if resolve(board, pieces_to_use, used_pieces):
-        if resolve(board, pieces_to_use, used_pieces):
+        start = time()
+        if resolve(board, pieces_to_use, board.board[0][0].get_probable(pieces_to_use)):
             outln(board, end = "")
         else:
             outln("impossible puzzle!")
-        outln(time()-start)
+        outln(time() - start)

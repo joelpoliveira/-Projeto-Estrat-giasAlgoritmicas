@@ -142,41 +142,33 @@ class Board:
         new_b.board = self.board.copy()
         return new_b
     
-def resolve(board, pieces_to_use, used_pieces):
-	pieces_to_use+=used_pieces
-	used_pieces.clear()
+def resolve(board, pieces):
+    if board.is_complete():
+        return True
 
-	while True:
-		#bool(empty list) = False
-		if pieces_to_use:
-			resolved = False
-			#try all piece rotations
-			for _ in range(4):
-				if (board.piece_fits(pieces_to_use[0].rotate(_))):
-					board.insert( pieces_to_use.popleft().rotate(_) )
+    next_cases = {}
+    for i in range(len(pieces)):
+        for _ in range(4):
+            if board.piece_fits(pieces[i].rotate(_)):
+                next_cases[pieces[i]] = next_cases.get(pieces[i], []) + [(_, pieces[:i] + pieces[i+1:])]
+    
+    for piece, cases in next_cases.items():
+        for tup in cases:
+            rot, next_pieces = tup
+            board.insert(piece.rotate(rot))
+            result = resolve(board, next_pieces)
+            if result:
+                return True
+            board.pop()
 
-					#piece fits, try next
-					resolved = resolve(board, pieces_to_use.copy(), used_pieces.copy())
-
-					if resolved:
-						return resolved
-					else:
-						pieces_to_use.appendleft( board.pop() )
-
-			used_pieces.append( pieces_to_use.popleft() )
-			
-		else:			
-			if board.is_complete():
-				return True
-			return False
+    return False
 
 if __name__ == "__main__":
     n = int(readln())
 
     # Number of pieces, Rows, Cols
     for _ in range(n):
-        pieces_to_use = deque() # to resolve uncomment this
-        used_pieces = deque()
+        pieces_to_use = []
 
 
         N, R, C = list(map(int, readln().split()))
@@ -188,7 +180,7 @@ if __name__ == "__main__":
             pieces_to_use.append( Piece( readln().split() ) )
         start = time()
         #if resolve(board, pieces_to_use, used_pieces):
-        if resolve(board, pieces_to_use, used_pieces):
+        if resolve(board, pieces_to_use):
             outln(board, end = "")
         else:
             outln("impossible puzzle!")

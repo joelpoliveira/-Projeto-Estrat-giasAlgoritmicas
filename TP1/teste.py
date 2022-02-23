@@ -1,5 +1,6 @@
 from sys import stdin, stdout, setrecursionlimit
 from collections import deque
+from time import time
 setrecursionlimit(2501)
 
 def read_all():
@@ -51,9 +52,7 @@ class Piece:
     def get_probable(self, pieces):
         probable = set()
         for piece in pieces:
-            if self == piece:
-                continue
-            elif self.diff_numbers.intersection(piece.diff_numbers)!=set():
+            if self.diff_numbers.intersection(piece.diff_numbers)!=set():
                 probable.add(piece)
         return probable
 
@@ -120,6 +119,15 @@ class Board:
             if piece.match_up(self.board[r-1][c]) and piece.match_left(self.board[r][c-1]):
                 return True
             return False
+    
+    def get_next_candidates(self, pieces):
+        candidates = []
+        for piece in pieces:
+            for _ in range(4):
+                if self.piece_fits(piece.rotate(_)):
+                    candidates.append(piece)
+                    break
+        return candidates
 
     def swap(self):
         pass
@@ -141,60 +149,33 @@ class Board:
         new_b = Board(self.rows, self.cols, self.board[0][0])
         new_b.board = self.board.copy()
         return new_b
-    
-def resolve(board, pieces_to_use, used_pieces):
-	pieces_to_use+=used_pieces
-	used_pieces.clear()
 
-	while True:
-		#bool(empty list) = False
-		if pieces_to_use:
-			resolved = False
-			#try all piece rotations
-			for _ in range(4):
-				if (board.piece_fits(pieces_to_use[0])):
-					board.insert( pieces_to_use.popleft() )
-
-					#piece fits, try next
-					resolved = resolve(board, pieces_to_use.copy(), used_pieces.copy())
-
-					if resolved:
-						return resolved
-					else:
-						pieces_to_use.appendleft( board.pop() )
-				pieces_to_use[0].rotate()
-
-			used_pieces.append( pieces_to_use.popleft() )
-			
-		else:			
-			if board.is_complete():
-				return True
-			return False
-
-def resolve2(board, pieces : set, possible_pieces : set):
+def resolve(board, pieces, possible_pieces):
     if len(possible_pieces) == 0 or len(pieces) == 0:
         if board.is_complete():
             return True
         return False
 
-    next_cases = {}
+    now = []
     for piece in possible_pieces:
         for _ in range(4):
             if board.piece_fits(piece.rotate(_)):
-
-                next_cases[piece] = next_cases.get(piece, []) + [(_, piece.get_probable(pieces) )]
+                now.append((_, piece))
     
 
-    for piece, cases in next_cases.items():
-        for tuple in cases:
-            orient, next_pieces = tuple
-            board.insert(piece.rotate(orient))
-            pieces.remove(piece)
-            result = resolve2(board, pieces, next_pieces)
-            if result:
-                return True
-            pieces.add(piece)
-            board.pop()
+    for i in range(len(now)):
+        rot, piece = now[i]
+
+        board.insert(piece.rotate(rot))
+        pieces.remove(piece)
+
+        result = resolve(board, pieces, board.get_next_candidates(pieces))
+
+        if result:
+            return True
+
+        pieces.add(piece)
+        board.pop()
 
     return False
 
@@ -210,7 +191,6 @@ if __name__ == "__main__":
         used_pieces = deque()
         #pieces_to_use = []  # to resolve2 uncomment this, a deque não permite slice
         
-
         N, R, C = list(map(int, readln().split()))
 
         first_piece = Piece(readln().split())
@@ -220,7 +200,9 @@ if __name__ == "__main__":
         #    pieces_to_use.append( Piece( readln().split() ) )
         pieces_to_use = {Piece( readln().split() ) for __ in range(N - 1)}
         #if resolve(board, pieces_to_use, used_pieces):
-        if resolve2(board, pieces_to_use, board.board[0][0].get_probable(pieces_to_use)):
+        start = time()
+        if resolve(board, pieces_to_use, board.get_next_candidates(pieces_to_use)):
             outln(board, end = "")
         else:
             outln("impossible puzzle!")
+        outln(time()-start)
