@@ -14,7 +14,21 @@ def outln(n = '', end = '\n'):
 
 class Piece:    
     def __init__(self, array):
-        self.numbers = [[array[0], array[1]], [array[3], array[2]]]
+        self.numbers = [ [array[0], array[1] ], 
+                              [array[3], array[2] ] ]
+        self.numbers2 = [
+                            [ [array[0], array[1] ], 
+                              [array[3], array[2] ] ], 
+                        
+                            [ [array[3], array[0] ],
+                              [array[2], array[1] ] ],
+
+                            [ [array[2], array[3] ],
+                              [array[1], array[0] ] ],
+
+                            [ [array[1], array[2] ],
+                              [array[0], array[3] ] ]
+                        ]
         #print("Created: ", self.numbers)
     
     def row(self, n):
@@ -142,13 +156,10 @@ class Board:
         new_b.board = self.board.copy()
         return new_b
 
-def copy_except(arr, index):
-    return arr[:index] + arr[index+1:]
-
-def resolve(board, pieces, index):
+def resolve(board, pieces):
     if board.is_complete():
         return True
-
+    """
     for i in range(len(pieces)):
         for _ in range(4):
             if board.piece_fits(pieces[i].rotate(_)):
@@ -159,8 +170,21 @@ def resolve(board, pieces, index):
                 if result:
                     return True
                 board.pop()
-                
-                #next_cases[pieces[i]] = next_cases.get(pieces[i], []) + [(_, pieces[:i] + pieces[i+1:])]
+    """   
+    for piece in pieces:
+        for _ in range(4):
+            if board.piece_fits(piece.rotate(_)):
+
+                board.insert(piece.rotate(_))
+                pieces.remove(piece)
+                result = resolve(board, pieces)
+
+                if result:
+                    return True
+
+                pieces.add(piece)
+                board.pop()
+
     return False
 
 if __name__ == "__main__":
@@ -176,11 +200,13 @@ if __name__ == "__main__":
         first_piece = Piece(readln().split())
         # Create Board
         board = Board(R, C, first_piece)
-        for __ in range(N - 1):
-            pieces_to_use.append( Piece( readln().split() ) )
+
+        
+        #pieces_to_use = [ Piece( readln().split() ) for __ in range(N - 1) ]
+        pieces_to_use = {Piece(readln().split()) for __ in range(N-1)}
         start = time()
         #if resolve(board, pieces_to_use, used_pieces):
-        if resolve(board, pieces_to_use, 0):
+        if resolve(board, pieces_to_use):
             outln(board, end = "")
         else:
             outln("impossible puzzle!")
