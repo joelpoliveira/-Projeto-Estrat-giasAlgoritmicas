@@ -14,6 +14,7 @@ def outln(n = '', end = '\n'):
 class Piece:    
     def __init__(self, array):
         self.numbers = [[array[0], array[1]], [array[3], array[2]]]
+        self.diff_numbers = set(array)
         #print("Created: ", self.numbers)
     
     def row(self, n):
@@ -23,9 +24,20 @@ class Piece:
         for i in range(2):
             outln(self.numbers[n][i], end = " ")
     
-    def rotate(self):
-        temp = self.numbers
-        self.numbers = [[temp[1][0], temp[0][0]], [temp[1][1], temp[0][1]]]
+    def rotate(self, n):
+        piece = self.copy()
+        if n%4== 0:
+            return piece
+        elif n%4==1:
+            temp = piece.numbers
+            piece.numbers = [[temp[1][0], temp[0][0]], [temp[1][1], temp[0][1]]]
+        elif n%4==2:
+            temp = piece.numbers
+            piece.numbers = [[temp[1][1], temp[1][0]], [temp[0][1], temp[0][0]]]
+        elif n%4==3:
+            temp = piece.numbers
+            piece.numbers = [ [temp[0][1], temp[1][1]], [temp[0][0], temp[1][0]] ]
+        return piece
 
     def match_up(self, piece):
         return (self.numbers[0][0] == piece.numbers[1][0]) and (self.numbers[0][1] == piece.numbers[1][1]) 
@@ -35,6 +47,16 @@ class Piece:
 
     def copy(self):
         return Piece([self.numbers[0][0], self.numbers[0][1], self.numbers[1][1], self.numbers[1][0]])
+
+    def get_probable(self, pieces):
+        probable = set()
+        for piece in pieces:
+            if self == piece:
+                continue
+            elif self.diff_numbers.intersection(piece.diff_numbers)!=set():
+                probable.add(piece)
+        return probable
+
 class Board:    
     def __init__(self, rows, cols, first_piece):
         self.board = [[None for i in range(cols)] for j in range(rows)]
@@ -149,25 +171,31 @@ def resolve(board, pieces_to_use, used_pieces):
 				return True
 			return False
 
-def resolve2(board, pieces):
-    if board.is_complete():
-        return True
+def resolve2(board, pieces : set, possible_pieces : set):
+    if len(possible_pieces) == 0 or len(pieces) == 0:
+        if board.is_complete():
+            return True
+        return False
 
     next_cases = {}
-    for i in range(len(pieces)):
+    for piece in possible_pieces:
         for _ in range(4):
-            if board.piece_fits(pieces[i]):
-                piece = pieces[i].copy()
-                next_cases[piece] = pieces[:i] + pieces[i+1:]
-            pieces[i].rotate()
+            if board.piece_fits(piece.rotate(_)):
+
+                next_cases[piece] = next_cases.get(piece, []) + [(_, piece.get_probable(pieces) )]
     
 
-    for piece, next_pieces in next_cases.items():
-        board.insert(piece)
-        result = resolve2(board, next_pieces)
-        if result:
-            return True
-        board.pop()
+    for piece, cases in next_cases.items():
+        for tuple in cases:
+            orient, next_pieces = tuple
+            board.insert(piece.rotate(orient))
+            pieces.remove(piece)
+            result = resolve2(board, pieces, next_pieces)
+            if result:
+                return True
+            pieces.add(piece)
+            board.pop()
+
     return False
 
 
@@ -178,20 +206,21 @@ if __name__ == "__main__":
 
     # Number of pieces, Rows, Cols
     for _ in range(n):
-        #pieces_to_use = deque()
-        pieces_to_use = []
+        #pieces_to_use = deque() # to resolve uncomment this
         used_pieces = deque()
+        #pieces_to_use = []  # to resolve2 uncomment this, a deque não permite slice
+        
 
         N, R, C = list(map(int, readln().split()))
 
         first_piece = Piece(readln().split())
         # Create Board
         board = Board(R, C, first_piece)
-        for __ in range(N - 1):
-            pieces_to_use.append( Piece( readln().split() ) )
-
+        #for __ in range(N - 1):
+        #    pieces_to_use.append( Piece( readln().split() ) )
+        pieces_to_use = {Piece( readln().split() ) for __ in range(N - 1)}
         #if resolve(board, pieces_to_use, used_pieces):
-        if resolve2(board, pieces_to_use):
+        if resolve2(board, pieces_to_use, board.board[0][0].get_probable(pieces_to_use)):
             outln(board, end = "")
         else:
             outln("impossible puzzle!")
