@@ -14,8 +14,8 @@ def outln(n = '', end = '\n'):
 
 class Piece:    
     def __init__(self, array):
-        self.numbers = [ [array[0], array[1] ], 
-                              [array[3], array[2] ] ]
+       # self.numbers = [ [array[0], array[1] ], 
+       #                       [array[3], array[2] ] ]
         self.numbers2 = [
                             [ [array[0], array[1] ], 
                               [array[3], array[2] ] ], 
@@ -29,29 +29,18 @@ class Piece:
                             [ [array[1], array[2] ],
                               [array[0], array[3] ] ]
                         ]
+        self.now = 0
         #print("Created: ", self.numbers)
     
     def row(self, n):
-        return ' '.join(self.numbers[n])
+        return ' '.join(self.numbers2[self.now][n])
     
     def print_row(self, n):
         for i in range(2):
             outln(self.numbers[n][i], end = " ")
     
     def rotate(self, n):
-        piece = self.copy()
-        if n%4== 0:
-            return piece
-        elif n%4==1:
-            temp = piece.numbers
-            piece.numbers = [[temp[1][0], temp[0][0]], [temp[1][1], temp[0][1]]]
-        elif n%4==2:
-            temp = piece.numbers
-            piece.numbers = [[temp[1][1], temp[1][0]], [temp[0][1], temp[0][0]]]
-        elif n%4==3:
-            temp = piece.numbers
-            piece.numbers = [ [temp[0][1], temp[1][1]], [temp[0][0], temp[1][0]] ]
-        return piece
+        return self.numbers2[n%4]
 
     def match_up(self, piece):
         return (self.numbers[0][0] == piece.numbers[1][0]) and (self.numbers[0][1] == piece.numbers[1][1]) 
@@ -61,15 +50,12 @@ class Piece:
 
     def copy(self):
         return Piece([self.numbers[0][0], self.numbers[0][1], self.numbers[1][1], self.numbers[1][0]])
+    
+    def match_bottom(self, piece_numbers):
+        return (piece_numbers[0][0] == self.numbers2[self.now][1][0]) and (piece_numbers[0][1] == self.numbers2[self.now][1][1])
 
-    def get_probable(self, pieces):
-        probable = []
-        for i in range(len(pieces)):
-            if self == pieces[i]:
-                continue
-            elif self.diff_numbers.intersection(pieces[i].diff_numbers)!=set():
-                probable.append(pieces[i])
-        return probable
+    def match_right(self, piece_numbers):
+        return (piece_numbers[0][0] == self.numbers2[self.now][0][1]) and (piece_numbers[1][0] == self.numbers2[self.now][1][1])
 
 class Board:    
     def __init__(self, rows, cols, first_piece):
@@ -116,22 +102,21 @@ class Board:
         self.board[r][c] = Piece
         self.next_empty+=1
 
-    def piece_fits(self, piece):
+    def piece_fits(self, piece_numbers):
         r,c = self.get_next()
         #print(f"{r}--{c}")
-        
         if r == 0:
-            if piece.match_left(self.board[r][c-1]):
+            if self.board[r][c-1].match_right(piece_numbers):
                 return True
             return False
 
         elif c == 0:
-            if piece.match_up(self.board[r-1][c]):
+            if self.board[r - 1][c].match_bottom(piece_numbers):
                 return True
             return False
 
         else:
-            if piece.match_up(self.board[r-1][c]) and piece.match_left(self.board[r][c-1]):
+            if self.board[r - 1][c].match_bottom(piece_numbers) and self.board[r][c - 1].match_right(piece_numbers):
                 return True
             return False
 
@@ -174,14 +159,15 @@ def resolve(board, pieces):
     for piece in pieces:
         for _ in range(4):
             if board.piece_fits(piece.rotate(_)):
-
-                board.insert(piece.rotate(_))
+                piece.now = _
+                board.insert(piece)
                 pieces.remove(piece)
                 result = resolve(board, pieces)
 
                 if result:
                     return True
 
+                piece.now = 0
                 pieces.add(piece)
                 board.pop()
 
