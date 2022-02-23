@@ -2,7 +2,12 @@ from sys import stdin, stdout, setrecursionlimit
 from collections import deque
 from time import time
 setrecursionlimit(2501)
+""""
 
+TIVEMOS 40 PONTOS NESTE
+
+
+"""
 def read_all():
     return stdin.readlines()
 
