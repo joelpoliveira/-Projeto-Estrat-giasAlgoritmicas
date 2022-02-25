@@ -1,13 +1,7 @@
 from sys import stdin, stdout, setrecursionlimit
-from collections import deque
 from time import time
-setrecursionlimit(2501)
-""""
+setrecursionlimit(2500)
 
-TIVEMOS 40 PONTOS NESTE
-
-
-"""
 def read_all():
     return stdin.readlines()
 
@@ -16,51 +10,60 @@ def readln():
     
 def outln(n = '', end = '\n'):
     return stdout.write(str(n) + end)
-
+    
 class Piece:    
     def __init__(self, array):
-        self.numbers = [[array[0], array[1]], [array[3], array[2]]]
+        self.numbers = [
+                            [ [array[0], array[1] ], 
+                              [array[3], array[2] ] ], 
+                        
+                            [ [array[3], array[0] ],
+                              [array[2], array[1] ] ],
+
+                            [ [array[2], array[3] ],
+                              [array[1], array[0] ] ],
+
+                            [ [array[1], array[2] ],
+                              [array[0], array[3] ] ]
+                        ]
+        self.now = 0
         #print("Created: ", self.numbers)
     
     def row(self, n):
-        return ' '.join(self.numbers[n])
+        return ' '.join(self.numbers[self.now][n])
     
     def print_row(self, n):
         for i in range(2):
-            outln(self.numbers[n][i], end = " ")
+            outln(self.numbers[self.now][n][i], end = " ")
     
     def rotate(self, n):
-        piece = self.copy()
-        if n%4== 0:
-            return piece
-        elif n%4==1:
-            temp = piece.numbers
-            piece.numbers = [[temp[1][0], temp[0][0]], [temp[1][1], temp[0][1]]]
-        elif n%4==2:
-            temp = piece.numbers
-            piece.numbers = [[temp[1][1], temp[1][0]], [temp[0][1], temp[0][0]]]
-        elif n%4==3:
-            temp = piece.numbers
-            piece.numbers = [ [temp[0][1], temp[1][1]], [temp[0][0], temp[1][0]] ]
-        return piece
+        return self.numbers[n%4]
 
-    def match_up(self, piece):
-        return (self.numbers[0][0] == piece.numbers[1][0]) and (self.numbers[0][1] == piece.numbers[1][1]) 
+    def match_up(self, piece_numbers):
+        return (self.numbers[self.now][0][0] == piece_numbers[1][0]) and (self.numbers[self.now][0][1] == piece_numbers[1][1]) 
 
-    def match_left(self, piece):
-        return (self.numbers[0][0] == piece.numbers[0][1]) and (self.numbers[1][0] == piece.numbers[1][1]) 
+    def match_left(self, piece_numbers):
+        return (self.numbers[self.now][0][0] == piece_numbers[0][1]) and (self.numbers[self.now][1][0] == piece_numbers[1][1]) 
 
     def copy(self):
         return Piece([self.numbers[0][0], self.numbers[0][1], self.numbers[1][1], self.numbers[1][0]])
+    
+    def match_bottom(self, piece_numbers):
+        return (piece_numbers[0][0] == self.numbers[self.now][1][0]) and (piece_numbers[0][1] == self.numbers[self.now][1][1])
 
-    def get_probable(self, pieces):
-        probable = []
-        for i in range(len(pieces)):
-            if self == pieces[i]:
-                continue
-            elif self.diff_numbers.intersection(pieces[i].diff_numbers)!=set():
-                probable.append(pieces[i])
-        return probable
+    def match_right(self, piece_numbers):
+        return (piece_numbers[0][0] == self.numbers[self.now][0][1]) and (piece_numbers[1][0] == self.numbers[self.now][1][1])
+ 
+    def any_match(self, piece_numbers):
+        if self.match_bottom(piece_numbers):
+            return True
+        if self.match_right(piece_numbers):
+            return True
+        if self.match_up(piece_numbers):
+            return True
+        if self.match_left(piece_numbers):
+            return True
+        return False
 
 class Board:    
     def __init__(self, rows, cols, first_piece):
@@ -69,7 +72,8 @@ class Board:
         self.rows = rows
         self.cols = cols
         self.next_empty = 1
-     
+        self.orientation = cols<=rows
+
     def __str__(self):
         r = []
         for i in range(self.rows):
@@ -95,11 +99,13 @@ class Board:
     def get_next(self):
         row = self.next_empty//self.cols
         col = self.next_empty%self.cols
+
         return row,col
 
-    def get_last(self):
+    def get_current(self):
         row = (self.next_empty - 1)//self.cols
         col = (self.next_empty - 1)%self.cols
+
         return row,col
 
     def insert(self, Piece):
@@ -107,64 +113,65 @@ class Board:
         self.board[r][c] = Piece
         self.next_empty+=1
 
-    def piece_fits(self, piece):
+    def piece_fits(self, piece_numbers):
         r,c = self.get_next()
-        #print(f"{r}--{c}")
-        
+
         if r == 0:
-            if piece.match_left(self.board[r][c-1]):
+            if self.board[r][c-1].match_right(piece_numbers):
                 return True
             return False
 
-        elif c == 0:
-            if piece.match_up(self.board[r-1][c]):
+        if c == 0:
+            if self.board[r - 1][c].match_bottom(piece_numbers):
                 return True
             return False
 
-        else:
-            if piece.match_up(self.board[r-1][c]) and piece.match_left(self.board[r][c-1]):
-                return True
-            return False
-
-    def swap(self):
-        pass
-    
-    def solve(self):
-        pass
-    
+        if self.board[r - 1][c].match_bottom(piece_numbers) and self.board[r][c - 1].match_right(piece_numbers):
+            return True
+        return False
+   
     def is_complete(self):
        return (self.next_empty)==(self.rows*self.cols)
 	
     def pop(self):
-        r,c = self.get_last()
+        r,c = self.get_current()
         piece = self.board[r][c]
         self.board[r][c] = None
         self.next_empty-=1
         return piece
 
-    def copy(self):
-        new_b = Board(self.rows, self.cols, self.board[0][0])
-        new_b.board = self.board.copy()
-        return new_b
+    def get_current_piece(self):
+        r,c = self.get_current()
+        return self.board[r][c]
+
+    def get_current_to_search(self):
+        r,c = self.get_current()
+        if c==self.cols-1:
+            return self.board[r][0]
+        return self.board[r][c]
+pieces = set()
+
+def resolve(board, subsets):
+    #board.debug_outln()
     
-def resolve(board, pieces):
     if board.is_complete():
         return True
 
-    next_cases = {}
-    for i in range(len(pieces)):
-        for _ in range(4):
-            if board.piece_fits(pieces[i].rotate(_)):
-                next_cases[pieces[i]] = next_cases.get(pieces[i], []) + [(_, pieces[:i] + pieces[i+1:])]
-    
-    for piece, cases in next_cases.items():
-        for tup in cases:
-            rot, next_pieces = tup
-            board.insert(piece.rotate(rot))
-            result = resolve(board, next_pieces)
-            if result:
-                return True
-            board.pop()
+    current = board.get_current_to_search()
+
+    for i in range(len(subsets[current])):
+        if subsets[current][i] in pieces:
+            for rot in range(4):
+                if board.piece_fits( subsets[current][i].rotate(rot) ):
+                    subsets[current][i].now = rot
+                    board.insert( subsets[current][i] )
+                    pieces.remove( subsets[current][i] )
+
+                    result = resolve(board, subsets)
+                    if result:
+                        return True
+                    
+                    pieces.add( board.pop() )
 
     return False
 
@@ -173,20 +180,40 @@ if __name__ == "__main__":
 
     # Number of pieces, Rows, Cols
     for _ in range(n):
-        pieces_to_use = []
-
-
         N, R, C = list(map(int, readln().split()))
 
         first_piece = Piece(readln().split())
+
         # Create Board
         board = Board(R, C, first_piece)
-        for __ in range(N - 1):
-            pieces_to_use.append( Piece( readln().split() ) )
+
+        pieces_subset = {first_piece : []}
+
+        for __ in range(N-1):
+            piece = Piece( readln().split() ) 
+            pieces.add(piece)
+            pieces_subset[piece] = []
+
+            for elem in pieces_subset:
+                if elem!=piece:
+                    for rot in range(4):
+
+                        if elem!=first_piece:
+                            if elem.any_match(piece.rotate(rot)):
+                                pieces_subset[elem].append(piece)
+                                pieces_subset[piece].append(elem)
+                                break
+
+                        else:
+                            if elem.match_right( piece.rotate(rot) ) or elem.match_bottom( piece.rotate(rot) ):
+                                pieces_subset[elem].append(piece)
+                                break
+
         start = time()
-        #if resolve(board, pieces_to_use, used_pieces):
-        if resolve(board, pieces_to_use):
+        if resolve(board, pieces_subset):
+            outln(time()-start)
             outln(board, end = "")
         else:
+            outln(time()-start)
             outln("impossible puzzle!")
-        outln(time()-start)
+        

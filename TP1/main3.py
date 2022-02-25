@@ -1,5 +1,4 @@
 from sys import stdin, stdout, setrecursionlimit
-from collections import deque
 from time import time
 setrecursionlimit(2501)
 
@@ -14,8 +13,8 @@ def outln(n = '', end = '\n'):
 
 class Piece:    
     def __init__(self, array):
-        self.numbers = [[array[0], array[1]], [array[3], array[2]]]
-        self.diff_numbers = set(array)
+        self.numbers = [ [array[0], array[1] ], 
+                       [array[3], array[2] ] ]
         #print("Created: ", self.numbers)
     
     def row(self, n):
@@ -48,13 +47,12 @@ class Piece:
 
     def copy(self):
         return Piece([self.numbers[0][0], self.numbers[0][1], self.numbers[1][1], self.numbers[1][0]])
+    
+    def match_bottom(self, piece_numbers):
+        return (piece_numbers[0][0] == self.numbers2[self.now][1][0]) and (piece_numbers[0][1] == self.numbers2[self.now][1][1])
 
-    def get_probable(self, pieces):
-        probable = set()
-        for piece in pieces:
-            if self.diff_numbers.intersection(piece.diff_numbers)!=set():
-                probable.add(piece)
-        return probable
+    def match_right(self, piece_numbers):
+        return (piece_numbers[0][0] == self.numbers2[self.now][0][1]) and (piece_numbers[1][0] == self.numbers2[self.now][1][1])
 
 class Board:    
     def __init__(self, rows, cols, first_piece):
@@ -104,7 +102,6 @@ class Board:
     def piece_fits(self, piece):
         r,c = self.get_next()
         #print(f"{r}--{c}")
-        
         if r == 0:
             if piece.match_left(self.board[r][c-1]):
                 return True
@@ -119,15 +116,6 @@ class Board:
             if piece.match_up(self.board[r-1][c]) and piece.match_left(self.board[r][c-1]):
                 return True
             return False
-    
-    def get_next_candidates(self, pieces):
-        candidates = []
-        for piece in pieces:
-            for _ in range(4):
-                if self.piece_fits(piece.rotate(_)):
-                    candidates.append(piece)
-                    break
-        return candidates
 
     def swap(self):
         pass
@@ -153,13 +141,23 @@ class Board:
 def resolve(board, pieces):
     if board.is_complete():
         return True
+    """
+    for i in range(len(pieces)):
+        for _ in range(4):
+            if board.piece_fits(pieces[i].rotate(_)):
 
+                board.insert(pieces[i].rotate(_))
+                result = resolve(board, pieces[:i] + pieces[i+1:])
+
+                if result:
+                    return True
+                board.pop()
+    """   
     for piece in pieces:
         for _ in range(4):
             if board.piece_fits(piece.rotate(_)):
                 board.insert(piece.rotate(_))
                 pieces.remove(piece)
-
                 result = resolve(board, pieces)
 
                 if result:
@@ -167,32 +165,29 @@ def resolve(board, pieces):
 
                 pieces.add(piece)
                 board.pop()
+
     return False
 
-
-
 if __name__ == "__main__":
-    # number of board to solve
     n = int(readln())
 
     # Number of pieces, Rows, Cols
     for _ in range(n):
-        #pieces_to_use = deque() # to resolve uncomment this
-        used_pieces = deque()
-        #pieces_to_use = []  # to resolve2 uncomment this, a deque não permite slice
-        
+        pieces_to_use = []
+
+
         N, R, C = list(map(int, readln().split()))
 
         first_piece = Piece(readln().split())
         # Create Board
         board = Board(R, C, first_piece)
-        #for __ in range(N - 1):
-        #    pieces_to_use.append( Piece( readln().split() ) )
-        pieces_to_use = {Piece( readln().split() ) for __ in range(N - 1)}
-        #if resolve(board, pieces_to_use, used_pieces):
+
+        pieces_to_use = {Piece(readln().split()) for __ in range(N-1)}
         start = time()
         if resolve(board, pieces_to_use):
+            outln(time()-start)
             outln(board, end = "")
         else:
+            outln(time()-start)
             outln("impossible puzzle!")
-        outln(time()-start)
+            

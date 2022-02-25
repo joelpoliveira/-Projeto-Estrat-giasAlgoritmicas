@@ -14,30 +14,31 @@ def outln(n = '', end = '\n'):
 
 class Piece:    
     def __init__(self, array):
-        self.numbers = [[array[0], array[1]], [array[3], array[2]]]
+        self.numbers = [
+                            [ [array[0], array[1] ], 
+                              [array[3], array[2] ] ], 
+                        
+                            [ [array[3], array[0] ],
+                              [array[2], array[1] ] ],
+
+                            [ [array[2], array[3] ],
+                              [array[1], array[0] ] ],
+
+                            [ [array[1], array[2] ],
+                              [array[0], array[3] ] ]
+                        ]
+        self.now = 0
         #print("Created: ", self.numbers)
     
     def row(self, n):
-        return ' '.join(self.numbers[n])
+        return ' '.join(self.numbers[self.now][n])
     
     def print_row(self, n):
         for i in range(2):
             outln(self.numbers[n][i], end = " ")
     
     def rotate(self, n):
-        piece = self.copy()
-        if n%4== 0:
-            return piece
-        elif n%4==1:
-            temp = piece.numbers
-            piece.numbers = [[temp[1][0], temp[0][0]], [temp[1][1], temp[0][1]]]
-        elif n%4==2:
-            temp = piece.numbers
-            piece.numbers = [[temp[1][1], temp[1][0]], [temp[0][1], temp[0][0]]]
-        elif n%4==3:
-            temp = piece.numbers
-            piece.numbers = [ [temp[0][1], temp[1][1]], [temp[0][0], temp[1][0]] ]
-        return piece
+        return self.numbers[n%4]
 
     def match_up(self, piece):
         return (self.numbers[0][0] == piece.numbers[1][0]) and (self.numbers[0][1] == piece.numbers[1][1]) 
@@ -47,17 +48,15 @@ class Piece:
 
     def copy(self):
         return Piece([self.numbers[0][0], self.numbers[0][1], self.numbers[1][1], self.numbers[1][0]])
+    
+    def match_bottom(self, piece_numbers):
+        return (piece_numbers[0][0] == self.numbers[self.now][1][0]) and (piece_numbers[0][1] == self.numbers[self.now][1][1])
 
-    def get_probable(self, pieces):
-        probable = []
-        for i in range(len(pieces)):
-            if self == pieces[i]:
-                continue
-            elif self.diff_numbers.intersection(pieces[i].diff_numbers)!=set():
-                probable.append(pieces[i])
-        return probable
+    def match_right(self, piece_numbers):
+        return (piece_numbers[0][0] == self.numbers[self.now][0][1]) and (piece_numbers[1][0] == self.numbers[self.now][1][1])
 
-class Board:    
+class Board:   
+
     def __init__(self, rows, cols, first_piece):
         self.board = [[None for i in range(cols)] for j in range(rows)]
         self.board[0][0] = first_piece
@@ -102,22 +101,21 @@ class Board:
         self.board[r][c] = Piece
         self.next_empty+=1
 
-    def piece_fits(self, piece):
+    def piece_fits(self, piece_numbers):
         r,c = self.get_next()
         #print(f"{r}--{c}")
-        
         if r == 0:
-            if piece.match_left(self.board[r][c-1]):
+            if self.board[r][c-1].match_right(piece_numbers):
                 return True
             return False
 
         elif c == 0:
-            if piece.match_up(self.board[r-1][c]):
+            if self.board[r - 1][c].match_bottom(piece_numbers):
                 return True
             return False
 
         else:
-            if piece.match_up(self.board[r-1][c]) and piece.match_left(self.board[r][c-1]):
+            if self.board[r - 1][c].match_bottom(piece_numbers) and self.board[r][c - 1].match_right(piece_numbers):
                 return True
             return False
 
@@ -141,54 +139,49 @@ class Board:
         new_b = Board(self.rows, self.cols, self.board[0][0])
         new_b.board = self.board.copy()
         return new_b
+
     
-def resolve(board, pieces_to_use, used_pieces):
-	pieces_to_use+=used_pieces
-	used_pieces.clear()
+def resolve(board, pieces_to_use):
+    counter = 0
+    while True:
+        #bool(empty list) = False
+        if counter < len(pieces_to_use):
+            #try all piece rotations
+            for _ in range(4):
+                if ( board.piece_fits(pieces_to_use[0].rotate(_)) ):
+                    pieces_to_use[0].now = _
+                    board.insert( pieces_to_use.popleft())
 
-	while True:
-		#bool(empty list) = False
-		if pieces_to_use:
-			resolved = False
-			#try all piece rotations
-			for _ in range(4):
-				if (board.piece_fits(pieces_to_use[0].rotate(_))):
-					board.insert( pieces_to_use.popleft().rotate(_) )
+                    #piece fits, try next
+                    resolved = resolve(board, pieces_to_use)
 
-					#piece fits, try next
-					resolved = resolve(board, pieces_to_use.copy(), used_pieces.copy())
+                    if resolved:
+                        return True
+                    else:
+                        pieces_to_use.appendleft( board.pop() )
 
-					if resolved:
-						return resolved
-					else:
-						pieces_to_use.appendleft( board.pop() )
-
-			used_pieces.append( pieces_to_use.popleft() )
-			
-		else:			
-			if board.is_complete():
-				return True
-			return False
+            pieces_to_use.append( pieces_to_use.popleft() )
+            counter+=1
+        else:			
+            if board.is_complete():
+                return True
+            return False
 
 if __name__ == "__main__":
     n = int(readln())
 
     # Number of pieces, Rows, Cols
     for _ in range(n):
-        pieces_to_use = deque() # to resolve uncomment this
-        used_pieces = deque()
-
-
         N, R, C = list(map(int, readln().split()))
 
         first_piece = Piece(readln().split())
         # Create Board
         board = Board(R, C, first_piece)
-        for __ in range(N - 1):
-            pieces_to_use.append( Piece( readln().split() ) )
+
+        pieces_to_use = deque( Piece( readln().split() ) for i in range(N - 1) )
+
         start = time()
-        #if resolve(board, pieces_to_use, used_pieces):
-        if resolve(board, pieces_to_use, used_pieces):
+        if resolve(board, pieces_to_use):
             outln(board, end = "")
         else:
             outln("impossible puzzle!")
