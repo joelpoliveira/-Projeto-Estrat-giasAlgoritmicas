@@ -11,9 +11,12 @@ def readln():
 def outln(n="", end="\n"):
     return stdout.write(str(n) + end)
 
+
+#Dicionário que mapeia um inteiro para uma Peça|| [ rotação, rotações, flag_usada ]
 index_to_array = {}
 
 def create_piece(array, counter):
+    #modos possíveis da matriz
     possibilities = [
                             [ [array[0], array[1] ], 
                               [array[3], array[2] ] ], 
@@ -38,6 +41,7 @@ def rotate(index, n):
 def create_board(r,c, first_index):
     board = [[-1 for i in range(c)]for j in range(r)]
     board[0][0] = first_index
+                    #r, c, next_piece, board(r x c)
     board_all_data = [r,c,1,board]
     return board_all_data
 
@@ -66,6 +70,7 @@ def print_board(board):
         r.append("")
     outln('\n'.join(r), end = "")
 
+#devolve uma lista com os 4 possíveis encaixes, 1 por cada lado
 def get_matches(index):
     piece = index_to_array[index][1][0]
     return [(piece[0][0], piece[1][0]), (piece[1][0], piece[1][1]), (piece[1][1], piece[0][1]), (piece[0][1], piece[0][0])]
@@ -114,6 +119,7 @@ def pop(board):
     board[2] -= 1
     return index
 
+#devolve o par atual onde a nova peça tem que encaixar
 def get_current_match(board):
     r,c = get_current(board)
     if c == board[1] - 1:
@@ -168,11 +174,6 @@ if __name__=="__main__":
             for i in get_matches(index):
                 pieces[i] = pieces.get(i, []) + [index]
 
-        #print(index_to_array)
-        #print()
-        #print(pieces)
-        #print("\n")
-        #start = time()
         if solve(board, pieces):
         #    outln(time() - start)
             print_board(board)
