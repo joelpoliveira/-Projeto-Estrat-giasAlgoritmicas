@@ -73,7 +73,7 @@ def print_board(board):
 #devolve uma lista com os 4 possíveis encaixes, 1 por cada lado
 def get_matches(index):
     piece = index_to_array[index][1][0]
-    return [(piece[0][0], piece[1][0]), (piece[1][0], piece[1][1]), (piece[1][1], piece[0][1]), (piece[0][1], piece[0][0])]
+    return {(piece[0][0], piece[1][0]), (piece[1][0], piece[1][1]), (piece[1][1], piece[0][1]), (piece[0][1], piece[0][0])}
 
 def is_complete(board):
     return (board[2])==(board[0]*board[1])
@@ -174,6 +174,7 @@ if __name__=="__main__":
             for i in get_matches(index):
                 pieces[i] = pieces.get(i, []) + [index]
 
+        #start = time()
         if solve(board, pieces):
         #    outln(time() - start)
             print_board(board)
