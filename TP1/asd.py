@@ -15,7 +15,7 @@ def outln(n="", end="\n"):
 #Dicionário que mapeia um inteiro para uma Peça|| [ rotação, rotações, flag_usada ]
 index_to_array = {}
 
-def create_piece(array, counter):
+def create_piece(array, index, counts):
     #modos possíveis da matriz
     possibilities = [
                             [ [array[0], array[1] ], 
@@ -30,10 +30,13 @@ def create_piece(array, counter):
                             [ [array[1], array[2] ],
                               [array[0], array[3] ] ]
                         ]
+
+    for i in range(4):
+        counts[int(array[i])] = (counts[int(array[i])]+1)%2
             #rotação         #used
     piece = [0, possibilities, 0]
-    index_to_array[counter] = piece
-    return counter
+    index_to_array[index] = piece
+    return index
 
 def rotate(index, n):
     return index_to_array[index][1][n]
@@ -71,9 +74,16 @@ def print_board(board):
     outln('\n'.join(r), end = "")
 
 #devolve uma lista com os 4 possíveis encaixes, 1 por cada lado
-def get_matches(index):
+def get_single_matches(index):
     piece = index_to_array[index][1][0]
     return {(piece[0][0], piece[1][0]), (piece[1][0], piece[1][1]), (piece[1][1], piece[0][1]), (piece[0][1], piece[0][0])}
+
+def get_double_matches(index):
+    piece = index_to_array[index][1][0]
+    return {
+        (piece[0][1], piece[0][0], piece[1][0]), (piece[0][0], piece[1][0], piece[1][1]), 
+        (piece[1][0], piece[1][1], piece[0][1]), (piece[1][1], piece[0][1], piece[0][0])
+    }
 
 def is_complete(board):
     return (board[2])==(board[0]*board[1])
@@ -120,37 +130,47 @@ def pop(board):
     return index
 
 #devolve o par atual onde a nova peça tem que encaixar
-def get_current_match(board):
+def get_current_match(board, pieces):
     r,c = get_current(board)
+    
     if c == board[1] - 1:
         piece = index_to_array[board[3][r][0]]
         piece = piece[1][piece[0]]
         return (piece[1][1], piece[1][0])
-    else:
+    elif r==0:
         piece = index_to_array[board[3][r][c]]
         piece = piece[1][piece[0]]
         return (piece[0][1], piece[1][1])
+    else:
+        p_up = index_to_array[board[3][r - 1][c + 1]]
+        p_up = p_up[1][p_up[0]]
+        
+        p_left = index_to_array[board[3][r][c]]
+        p_left = p_left[1][p_left[0]]
+        
+        return (p_up[1][1], p_up[1][0], p_left[1][1])
 
 def solve(board, pieces):
     if is_complete(board):
         return True
     
-    match_now = get_current_match(board)
-
-    for index in pieces.get(match_now, []):
-        if index_to_array[index][2] == 0:
+    match_now = get_current_match(board, pieces)
+    #print(match_now)
+    for i in range(len(pieces.get(match_now, [])) ):
+        if index_to_array[pieces[match_now][i]][2] == 0:
             for rot in range(4):
-                if piece_fits(board, rotate(index, rot) ):
-                    index_to_array[index][0] = rot
-                    index_to_array[index][2] = 1
-                    insert(board, index )
+                if piece_fits(board, rotate(pieces[match_now][i], rot) ):
+                    index_to_array[pieces[match_now][i]][0] = rot
+                    index_to_array[pieces[match_now][i]][2] = 1
+
+                    insert(board, pieces[match_now][i] )
 
                     result = solve(board, pieces)
                     if result:
                         return True
                     
-                    index_to_array[index][0] = 0
-                    index_to_array[index][2] = 0
+                    index_to_array[pieces[match_now][i]][0] = 0
+                    index_to_array[pieces[match_now][i]][2] = 0
                     pop(board)
     
     return False
@@ -162,22 +182,24 @@ if __name__=="__main__":
         N, R, C = list(map(int, readln().split()))
 
         pieces = {}
-
-        first_index = create_piece(readln().split(), 0)
+        counts = [0 for i in range(1000)]
+        first_index = create_piece(readln().split(), 0, counts)
 
         # Create Board
         board = create_board(R, C, first_index)
 
         for __ in range(N - 1):
-            index = create_piece( readln().split(), __ + 1)
+            index = create_piece( readln().split(), __ + 1, counts)
 
-            for i in get_matches(index):
+            for i in get_single_matches(index):
+                pieces[i] = pieces.get(i, []) + [index]
+            for i in get_double_matches(index):
                 pieces[i] = pieces.get(i, []) + [index]
 
-        #start = time()
-        if solve(board, pieces):
-        #    outln(time() - start)
+        start = time()
+        if sum(counts) <= 4 and solve(board, pieces):
+            outln(time() - start)
             print_board(board)
         else:
-        #    outln(time() - start)
+            outln(time() - start)
             outln("impossible puzzle!")
