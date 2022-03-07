@@ -1,8 +1,9 @@
 from sys import stdin, stdout, setrecursionlimit
 from time import time
 
-setrecursionlimit(2500)
-
+N = 0
+R = 0
+C = 0
 
 def read_all():
     return stdin.readlines()
@@ -22,6 +23,8 @@ class Piece:
     up = None
     down = None
     values = []
+    uses = 0
+    rotation = 0
 
     def __str__(self):
         return (
@@ -31,9 +34,11 @@ class Piece:
             " l:" + str(self.left) 
         )
 
+class Aux:
+    inserted_pieces = 1
+
 
 def print_board(board, r, c):
-    
     for i in range(r):
         line = ''
         for k in range(2):
@@ -57,43 +62,67 @@ def rotate(piece):
     rotated_piece.left = (temp[3], temp[2])
     return rotated_piece
 
+def get_current(a):
+    row = a.inserted_pieces // C
+    col = a.inserted_pieces % C
+    
+    return row, col
 
-def solve(board, pieces, r, c):
-    pieces_dict = {}
+
+# def solve(board, pieces_dict, r, c):
+
+#     # Fazer board
+#     for i in range(r):
+#         for j in range(c - 1):
+#             if i == 0:
+#                 # se estivermos na 1º linha
+#                 #print(f'({i}, {j}) ===', len(pieces_dict['l' + str(board[i][j].right)]) )
+#                 board[i][j + 1] = pieces_dict['l' + str(board[i][j].right)]
+#             else:
+#                 if j == 0: # linha n, coluna 0 -> nenhuma peça do lado esquerdo
+#                     #print(f'({i}, {j}) ===', len(pieces_dict['u' + str(board[i-1][j].down)]) )
+#                     board[i][j] = pieces_dict['u' + str(board[i-1][j].down)]
+#                 else:
+#                     pass
     
-    # apenas guardar right and down pela maneira como as peças sao inseridas na board. da esquerda para direita e de cima para baixo
-    for p in pieces:
-        temp = p
-        for i in range(3):
-            pieces_dict['u' + str(temp.up)] = p
-            pieces_dict['r' + str(temp.right)] = p
-            pieces_dict['d' + str(temp.down)] = p
-            pieces_dict['l' + str(temp.left)] = p
+#     print('\n')
+#     print_board(board, r, c)
+
+
+def solve_2(board, pieces_dict, r, c, a):
+    
+    row, col = get_current(a)
+
+    if a.inserted_pieces == N:
+        print("DONE")
+        return
+    
+    print(f"({row}, {col})")
+    if row == 0:
+        if col == 0:
+            pass
+        else:
+            #print(pieces_dict['l' + str(board[row][col - 1].right)])
+            arr = pieces_dict.get('l' + str(board[row][col - 1].right))
+            if arr == []:
+                return
+            board[row][col] = arr[0]
             
-            temp = rotate(p)
+            pieces_dict.pop()
+            
+            solve_2(board, pieces_dict, r, c, a)
+            #print(str(board[row][col-1]))
     
-    for key, value in pieces_dict.items():
-        print(key + ' -> ' + str(value))
-    
-    # Fazer board
-    for i in range(r):
-        for j in range(c - 1):
-            if i == 0:
-                # se estivermos na 1º linha
-                print(f'({i}, {j}) ===', pieces_dict['l' + str(board[i][j].right)])
-                board[i][j + 1] = pieces_dict['l' + str(board[i][j].right)]
-            else:
-                if j == 0: # linha n, coluna 0 -> nenhuma peça do lado esquerdo
-                    print(f'({i}, {j}) ===', pieces_dict['u' + str(board[i-1][j].down)])
-                    board[i][j] = pieces_dict['u' + str(board[i-1][j].down)]
-                else:
-                    pass
-    
-    print('\n')
-    print_board(board, r, c)
+    a.inserted_pieces += 1
+    solve_2(board, pieces_dict, r, c, a)
+
+    #print('\n')
+    #print_board(board, r, c)
             
 
 if __name__ == "__main__":
+    setrecursionlimit(2500)
+    
     for _ in range(int(readln())):
         N, R, C = list(map(int, readln().split()))
         
@@ -130,7 +159,38 @@ if __name__ == "__main__":
         
         #print_board(board, R, C)
         
-        solve(board, pieces, R, C)
+        pieces_dict = {}
+    
+        # apenas guardar up and left pela maneira como as peças sao inseridas na board. da esquerda para direita e de cima para baixo
+        for p in pieces:
+            temp = p
+            for i in range(3):
+                if pieces_dict.get('u' + str(temp.up)) == None:
+                    pieces_dict['u' + str(temp.up)] = [p]
+                else:
+                    pieces_dict['u' + str(temp.up)].append(p)
+
+                # pieces_dict['r' + str(temp.right)] = p
+                # pieces_dict['d' + str(temp.down)] = p
+                
+                if pieces_dict.get('l' + str(temp.left)) == None:
+                    pieces_dict['l' + str(temp.left)] = [p]
+                else:
+                    pieces_dict['l' + str(temp.left)].append(p)
+                
+                temp = rotate(p)
+                temp.rotation = i + 1
+        
+        for key, value in pieces_dict.items():
+            print(key + ' -> ' + str(len(value)))
+        
+        a = Aux()
+        #a.inserted_pieces = 1
+        
+        solve_2(board, pieces_dict, R, C, a)
+        
+        print('\n')
+        print_board(board, R, C)
 
         # print(index_to_array)
         # start = time()
