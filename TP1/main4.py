@@ -3,10 +3,8 @@ from time import time
 
 setrecursionlimit(2500)
 
-
 def read_all():
     return stdin.readlines()
-
 
 def readln():
     return stdin.readline().rstrip()
@@ -14,7 +12,6 @@ def readln():
 
 def outln(n="", end="\n"):
     return stdout.write(str(n) + end)
-
 
 class Piece:
     left = None

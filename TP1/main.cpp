@@ -23,7 +23,7 @@ void create_piece(int _1,int _2,int _3,int _4,int counter, int pieces[][6]){
 void fill(int r, int c, int *board){
     for(int i = 0; i < r; i++){
         for (int j = 0; j < c; j++){
-            board[i*j + j] = -1;
+            board[i*c + j] = -1;
         }
     }
 }
@@ -36,26 +36,43 @@ std::string get_key(int a, int b){
     return sa.str();
 }
 
-void print_board(int * board, int r, int c){
-
+void print_board(int * board, int r, int c, int pieces[][6]){
+    for ( int i = 0; i < r; i++){
+        for ( int l = 0; l < 2; l++){
+            for (int j = 0; j < c; j++){
+                int index = i*c + j;
+                int rot = 4-pieces[board[index]][4];
+                if (l == 0)
+                    std::cout<<pieces[board[index]][rot%4]<<" "<<pieces[board[index]][(rot+1)%4];
+                else
+                    std::cout<<pieces[board[index]][(rot+3)%4]<<" "<<pieces[board[index]][(rot+2)%4];
+                
+                if(j!=c-1)
+                    std::cout<<"  ";
+            }
+            std::cout<<"\n";
+        }
+        if(i!=r-1)
+            std::cout<<"\n";
+    }
+    
 }
 
 std::string get_current_match(int * board, int c, int next_empty, int pieces[][6]){
     int r_now, c_now, p1, p2, rot, index;
     r_now = (next_empty - 1)/c;
     c_now = (next_empty - 1)%c;
-
     if (c_now == c-1){
         index = board[r_now*c];
-        rot = pieces[board[index]][5];
-        p1 = pieces[board[index]][(2+rot)%4];
-        p2 = pieces[board[index]][(3+rot)%4];
+        rot = 4 - pieces[index][4];
+        p1 = pieces[index][ (2+rot)%4 ];
+        p2 = pieces[index][ (3+rot)%4 ];
         return get_key(p1, p2);
     }else{
         index = board[r_now*c + c_now];
-        rot = pieces[board[index]][5];
-        p1 = pieces[board[index]][ (1 + rot)%4 ];
-        p2 = pieces[board[index]][ (2 + rot)%4 ];
+        rot = 4 - pieces[index][4];
+        p1 = pieces[index][ (1+rot)%4 ];
+        p2 = pieces[index][ (2+rot)%4 ];
         return get_key(p1, p2);
     }
 }
@@ -66,30 +83,39 @@ bool fits(int * board, int c, int next_empty, int pieces[][6], int index, int ro
     c_now = next_empty%c;
 
     if ( r_now == 0){
-        b_index = r_now * c + c_now - 1;
-        rot = pieces[board[b_index]][5];
-        return (pieces[index][(rot_in)%4] == pieces[board[b_index]][ (1 + rot)%4 ]) && 
-        (pieces[index][(4+rot_in)%4] == pieces[board[b_index]][ (3 + rot)%4 ]);
+        b_index = c_now - 1;
+        rot = 4 - pieces[board[b_index]][4];
+
+        bool l1 = (pieces[index][(4 - rot_in)%4] == pieces[board[b_index]][(1+rot)%4]);
+        bool l2 = (pieces[index][(7 - rot_in)%4] == pieces[board[b_index]][(2+rot)%4]);
+        return l1 && l2 ;   
     }
     if ( c_now == 0){
-        b_index = (r_now-1) * c + c_now;
-        rot = pieces[board[b_index]][5];
-        return (pieces[index][(rot_in)%4] == pieces[board[b_index]][ (4 + rot)%4 ]) && 
-        (pieces[index][(1+rot_in)%4] == pieces[board[b_index]][ (3 + rot)%4 ]);
+        b_index = (r_now-1) * c;
+        rot = 4-pieces[board[b_index]][4];
+        
+        bool u1 = (pieces[index][(4 - rot_in)%4] == pieces[board[b_index]][(3 + rot)% 4]);
+        bool u2 = (pieces[index][(5 - rot_in)%4] == pieces[board[b_index]][(2 + rot)%4]);
+        return  u1 && u2; 
     }
+    
     b_index = r_now * c + c_now - 1;
-    rot = pieces[board[b_index]][5];
-    bool temp = (pieces[index][0] == pieces[board[b_index]][ (1 + rot)%4 ]) && 
-        (pieces[index][4] == pieces[board[b_index]][ (3 + rot)%4 ]);
+    rot = 4-pieces[board[b_index]][4];
+
+    bool l1 = (pieces[index][(4 - rot_in)%4] == pieces[board[b_index]][(1+rot)%4]);
+    bool l2 = (pieces[index][(7 - rot_in)%4] == pieces[board[b_index]][(2+rot)%4]);
     
     b_index = (r_now-1) * c + c_now;
-    rot = pieces[board[b_index]][5];
-    return temp && (pieces[index][0] == pieces[board[b_index]][ (4 + rot)%4 ]) && 
-        (pieces[index][1] == pieces[board[b_index]][ (3 + rot)%4 ]);
+    rot = 4-pieces[board[b_index]][4];
+
+    bool u1 = (pieces[index][(4 - rot_in)%4] == pieces[board[b_index]][(3 + rot)% 4]);
+    bool u2 = (pieces[index][(5 - rot_in)%4] == pieces[board[b_index]][(2 + rot)%4]);
+    return l1&&l2&&u1&&u2;
 }
 
 void insert(int * board, int c, int next_empty, int index){
     int r_now, c_now;
+    
     r_now = next_empty/c;
     c_now = next_empty%c;
 
@@ -105,20 +131,26 @@ void pop(int * board, int c, int next_empty){
 }
 
 bool solve(int * board, int r, int c, int next_empty, int pieces[][6]){
+    /*for(int i = 0; i < r; i++){
+        for (int j = 0; j < c; j++)
+            cout<<board[i*c+j]<<" ";
+        cout<<"\n";
+    }*/
     if (next_empty == r*c)
         return true;
     
     std::string match = get_current_match(board, c, next_empty, pieces);
-    //std::cout << match;
+    //cout<<"match: "<<match<<"\n";
     bool result;
     for(int index: matches[match]){
-        std::cout<<index;
         if (pieces[index][5] == 0){
             for (int rot = 0; rot < 4; rot++){
-                if (fits(board, c, next_empty, pieces, index, rot)){
+                //cout<<rot<<"\n";
+                if (fits(board, c, next_empty, pieces, index, rot) == 1){
                     pieces[index][4] = rot;
                     pieces[index][5] = 1;
                     insert(board, c, next_empty, index);
+
                     result = solve(board, r, c, next_empty + 1, pieces);
                     if (result)
                         return true;
@@ -151,6 +183,7 @@ int main(){
         int * board = new int[r*c];
 
         fill(r, c, board);
+        
         board[0] = 0;
 
         for (int j = 0; j < n - 1; j++){
@@ -163,9 +196,9 @@ int main(){
             matches[get_key(p3, p2)].push_back(j+1);
             matches[get_key(p2, p1)].push_back(j+1);
         }
-        
-        if (solve(board, r, c, 1, pieces)){
-            print_board(board, r, c);
+
+        if (solve(board, r, c, 1, pieces) == true){
+            print_board(board, r, c, pieces);
         }else{
             std::cout<<"impossible puzzle!"<<"\n";
         }

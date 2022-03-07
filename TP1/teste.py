@@ -16,64 +16,73 @@ def outln(n="", end="\n"):
     return stdout.write(str(n) + end)
 
 
-index_to_array = {}
-pieces = set()
-
+piece_rotations = {}
+piece_data = {}
 
 def create_piece(array, counter):
     possibilities = [
-        [[array[0], array[1]], [array[3], array[2]]],
-        [[array[3], array[0]], [array[2], array[1]]],
-        [[array[2], array[3]], [array[1], array[0]]],
-        [[array[1], array[2]], [array[0], array[3]]],
+                        [ [array[0], array[1]], 
+                        [array[3], array[2]] ],
+                        
+                        [ [array[3], array[0]], 
+                        [array[2], array[1]] ],
+
+                        [ [array[2], array[3]], 
+                        [array[1], array[0]] ],
+
+                        [ [array[1], array[2]], 
+                        [array[0], array[3]] ],
     ]
-    piece = [0, possibilities]
-    index_to_array[counter] = piece
-    counter += 1
-    return counter - 1
+    piece_rotations[counter] = possibilities
+    piece_data[counter] = [0, 0] #rotation and used flag
+    return counter
 
 
 def row(index, n):
-    piece = index_to_array[index]
-    return " ".join(piece[1][piece[0]][n])
+    piece = piece_rotations[index]
+    rot = piece_data[index][0]
+
+    return " ".join(piece[rot][n])
 
 
 def print_row(piece, n):
-    outln(piece[1][piece[0]][n][0], end=" ")
-    outln(piece[1][piece[0]][n][1], end=" ")
+    piece = piece_rotations[piece]
+    rot = piece_data[piece][0]
+    outln(piece[1][rot][n][0], end=" ")
+    outln(piece[1][rot][n][1], end=" ")
 
 
 def rotate(index, n):
-    return index_to_array[index][1][n]
+    return piece_rotations[index][n]
 
 
 def match_up(index, piece_numbers):
-    piece = index_to_array[index]
-    piece_now = piece[1][piece[0]]
+    rot = piece_data[index][0]
+    piece_now = piece_rotations[index][rot]
     return (piece_now[0][0] == piece_numbers[1][0]) and (
         piece_now[0][1] == piece_numbers[1][1]
     )
 
 
 def match_left(index, piece_numbers):
-    piece = index_to_array[index]
-    piece_now = piece[1][piece[0]]
+    rot = piece_data[index][0]
+    piece_now = piece_rotations[index][rot]
     return (piece_now[0][0] == piece_numbers[0][1]) and (
         piece_now[1][0] == piece_numbers[1][1]
     )
 
 
 def match_bottom(index, piece_numbers):
-    piece = index_to_array[index]
-    piece_now = piece[1][piece[0]]
+    rot = piece_data[index][0]
+    piece_now = piece_rotations[index][rot]
     return (piece_numbers[0][0] == piece_now[1][0]) and (
         piece_numbers[0][1] == piece_now[1][1]
     )
 
 
 def match_right(index, piece_numbers):
-    piece = index_to_array[index]
-    piece_now = piece[1][piece[0]]
+    rot = piece_data[index][0]
+    piece_now = piece_rotations[index][rot]
     return (piece_numbers[0][0] == piece_now[0][1]) and (
         piece_numbers[1][0] == piece_now[1][1]
     )
@@ -110,17 +119,17 @@ def print_board(board):
     outln("\n".join(r), end="")
 
 
-"""def debug_outln(self):
-    for i in range(self.rows):
+def debug_outln(board):
+    for i in range(board[0]):
         for j in range(2):
-            for x in range(self.cols):
-                if self.board[i][x] is not None:
-                    self.board[i][x].print_row(j)
+            for x in range(board[1]):
+                if board[3][i][x] != -1:
+                    print_row(board[3][i][x], j)
                 else:
                     print("|_|", end = '')
                 outln('', end = ' ')
-            outln('\n') if j == self.rows - 1 and i != self.rows - 1 else outln()
-"""
+            outln('\n') if j == board[0] - 1 and i != board[1] - 1 else outln()
+
 
 
 def get_next(board):
@@ -184,34 +193,34 @@ def get_current_to_search(board):
     r, c = get_current(board)
 
     if c == board[1] - 1:
-        rot = index_to_array[board[3][r][0]][0]
+        rot = piece_data[board[3][r][0]][0]
         return board[3][r][0], (3 - rot)
 
-    rot = index_to_array[board[3][r][c]][0]
+    rot = piece_data[board[3][r][c]][0]
     return board[3][r][c], rot
 
-
 def resolve(board, subsets):
-    # board.debug_outln()
-
+    #debug_outln(board)
     if is_complete(board):
         return True
 
     current, match_index = get_current_to_search(board)
-    # print(f"current = {index_to_array[current]}, match = {match_index}")
+    #print(f"current = {current}, match = {match_index}")
     for i in subsets[current][match_index]:
-        if i in pieces:
+        if piece_data[i][1] == 0:
             for rot in range(4):
                 if piece_fits(board, rotate(i, rot)):
-                    index_to_array[i][0] = rot
+                    piece_data[i][0] = rot
+                    piece_data[i][1] = 1
                     insert(board, i)
-                    pieces.remove(i)
-
+                    
                     result = resolve(board, subsets)
                     if result:
                         return True
 
-                    pieces.add(pop(board))
+                    piece_data[i][0] = 0    
+                    piece_data[i][1] = 0
+                    pop(board)
 
     return False
 
@@ -231,11 +240,9 @@ if __name__ == "__main__":
         x = {0: [0, 1, 2, 3], 1: [1, 2, 3, 0], 2: [2, 3, 0, 1], 3: [3, 0, 1, 2]}
 
         for __ in range(N - 1):
-
             index = create_piece(readln().split(), __ + 1)
-            pieces.add(index)
             pieces_subset[index] = [[], [], [], []]
-
+            
             for i in pieces_subset:
                 if i != index:
                     for rot in range(4):
@@ -263,14 +270,14 @@ if __name__ == "__main__":
 
                             if match_right(i, rotate(index, rot)):
                                 pieces_subset[i][0].append(index)
-
+        #print(pieces_subset)
         # print(index_to_array[0])
-        # for elem in pieces_subset:
+        #for elem in pieces_subset:
         #    print(pieces_subset[elem])
-        # start = time()
+        #start = time()
         if resolve(board, pieces_subset):
-            # outln(time()-start)
+            #outln(time()-start)
             print_board(board)
         else:
-            # outln(time()-start)
+            #outln(time()-start)
             outln("impossible puzzle!")
