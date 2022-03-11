@@ -34,29 +34,7 @@ int sum(int * counts){
     return s;
 }
 
-void create_piece(int _1,int _2,int _3,int _4,int counter, int * counts){
-    pieces[counter*6] = _1;
-    pieces[counter*6+1] = _2;
-    pieces[counter*6+2] = _3;
-    pieces[counter*6+3] = _4;
-    pieces[counter*6+4] = 0; //rotação
-    pieces[counter*6+5] = 0; //flag_used;
-
-    counts[_1] = (counts[_1]+1)%2;
-    counts[_2] = (counts[_2]+1)%2;
-    counts[_3] = (counts[_3]+1)%2;
-    counts[_4] = (counts[_4]+1)%2;
-}
-
-void fill_board(int r, int c, int **board){
-    for(int i = 0; i < r; i++){
-        for (int j = 0; j < c; j++){
-            board[i*c + j] = NULL;
-        }
-    }
-}
-
-void print_board(int ** board, int r, int c){
+void print_board(int ** board){
     int i, j, l, *piece, rot;
     for ( i = 0; i < r; i++){
         for ( l = 0; l < 2; l++){
@@ -98,22 +76,17 @@ bool fits(int next_empty, int * ip, int rot_in){
     int r_now, c_now, rot, *bp;
     r_now = next_empty/c;
     c_now = next_empty%c;
-
     if ( r_now == 0){
         bp = board[c_now - 1];
         rot = 4 - bp[4];
-
-        bool l1 = (ip[(4 - rot_in)%4] == bp[(1+rot)%4]);
-        bool l2 = (ip[(7 - rot_in)%4] == bp[(2+rot)%4]);
-        return l1 && l2 ;   
+        //left 1 and left 2
+        return (ip[(4 - rot_in)%4] == bp[(1+rot)%4]) && (ip[(7 - rot_in)%4] == bp[(2+rot)%4]) ;   
     }
     if ( c_now == 0){
         bp = board[(r_now-1)*c];
         rot = 4 - bp[4];
-
-        bool u1 = (ip[(4 - rot_in)%4] == bp[(3 + rot)% 4]);
-        bool u2 = (ip[(5 - rot_in)%4] == bp[(2 + rot)%4]);
-        return  u1 && u2; 
+        //up 1 and up 2
+        return  (ip[(4 - rot_in)%4] == bp[(3 + rot)% 4]) && (ip[(5 - rot_in)%4] == bp[(2 + rot)%4]); 
     }
     
     bp = board[r_now * c + c_now - 1];
@@ -137,23 +110,20 @@ bool solve(int next_empty){
     
     array<int,2> match = get_current_match(next_empty);
     //cout<<"match: "<<match<<"\n";
-    bool result;
 
     for(int * piece: matches[match]){
         if (piece[5] == 0){
             for (int rot = 0; rot < 4; rot++){
-                //cout<<rot<<"\n";
                 if (fits(next_empty, piece, rot) == 1){
                     piece[4] = rot;
                     piece[5] = 1;
                     board[next_empty/c*c+next_empty%c] = piece;
 
-                    result = solve(next_empty + 1);
-                    if (result)
+                    
+                    if ( solve(next_empty + 1) )
                         return true;
                     
                     piece[5] = 0;
-                    //pop(next_empty);
                 }
             }
         }
@@ -179,10 +149,10 @@ int main(){
     std::ios_base::sync_with_stdio(0);
     std::cin.tie(0);
 
-    int _, n, p1,p2,p3,p4, j , i;
-    std::cin >> _;
+    int cases, n, p1,p2,p3,p4, j , i, index;
+    std::cin >> cases;
 
-    for (i = 0; i < _; i++){
+    for (i = 0; i < cases; i++){
         
         matches.clear();
         std::cin>>n>>r>>c;
@@ -191,17 +161,37 @@ int main(){
         int counts[1000] = {0};
 
         std::cin>>p1>>p2>>p3>>p4;
-        create_piece(p1, p2, p3, p4, 0, counts);
+        pieces[0] = p1;
+        pieces[1] = p2;
+        pieces[2] = p3;
+        pieces[3] = p4;
+        pieces[4] = 0; //rotação
+        pieces[5] = 0;
+
+        counts[p1] = (counts[p1]+1)%2;
+        counts[p2] = (counts[p2]+1)%2;
+        counts[p3] = (counts[p3]+1)%2;
+        counts[p4] = (counts[p4]+1)%2;
 
         board = new int*[r*c];
-        fill_board(r, c, board);
         board[0] = pieces;
         
         for (j = 1; j < n; j++){
+            index = j * 6;
             std::cin>>p1>>p2>>p3>>p4;
-            create_piece(p1, p2, p3, p4, j, counts);
-            
-            //std::cout<<get_key(p2,p1)<<"\n";
+
+            pieces[index]   = p1;
+            pieces[index+1] = p2;
+            pieces[index+2] = p3;
+            pieces[index+3] = p4;
+            pieces[index+4] = 0; //rotação
+            pieces[index+5] = 0;
+
+            counts[p1] = (counts[p1]+1)%2;
+            counts[p2] = (counts[p2]+1)%2;
+            counts[p3] = (counts[p3]+1)%2;
+            counts[p4] = (counts[p4]+1)%2;
+
             if (matches.count({p1,p2})==0)
                 matches.insert(pair<array<int,2>, vector<int *>>({p1,p4}, {}));
             matches[{p1, p4}].push_back( (pieces+j*6) );
@@ -217,9 +207,7 @@ int main(){
             if (matches.count({p2,p1})==0)
                 matches.insert(pair<array<int,2>, vector<int *>>({p2,p1}, {}));
             matches[{p2, p1}].push_back( (pieces+j*6) );
-            
-            //print_vector(matches[{p1,p2}]);
-        }
+                    }
 
         
 
@@ -227,10 +215,10 @@ int main(){
         if (sum(counts)<=4 && solve(1) == true){
             auto end = chrono::steady_clock::now();
             cout<<chrono::duration_cast<chrono::milliseconds>(end - start).count()<<"\n";
-            print_board(board, r, c);
+            print_board(board);
         }else{
-            //auto end = chrono::steady_clock::now();
-            //cout<<chrono::duration_cast<chrono::milliseconds>(end - start).count()<<"\n";
+            auto end = chrono::steady_clock::now();
+            cout<<chrono::duration_cast<chrono::milliseconds>(end - start).count()<<"\n";
             std::cout<<"impossible puzzle!"<<"\n";
         }
         delete[] pieces;

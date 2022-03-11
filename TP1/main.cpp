@@ -7,45 +7,57 @@
 #include <string>
 #include <fstream>
 #include <iomanip>
+#include <array>
+#include <chrono>
 using namespace std;
 
-unordered_map<std::string, std::vector<int>> matches;
+// function obtained through stackoverflow:
+// https://stackoverflow.com/questions/42701688/using-an-unordered-map-with-arrays-as-keys
+struct ArrayHasher {
+    std::size_t operator()(const std::array<int, 2>& a) const {
+        std::size_t h = 0;
 
-void create_piece(int _1,int _2,int _3,int _4,int counter, int pieces[][6]){
-    pieces[counter][0] = _1;
-    pieces[counter][1] = _2;
-    pieces[counter][2] = _3;
-    pieces[counter][3] = _4;
-    pieces[counter][4] = 0; //rotação
-    pieces[counter][5] = 0; //flag_used;
-}
-
-void fill(int r, int c, int *board){
-    for(int i = 0; i < r; i++){
-        for (int j = 0; j < c; j++){
-            board[i*c + j] = -1;
+        for (auto e : a) {
+            h ^= std::hash<int>{}(e)  + 0x9e3779b9 + (h << 6) + (h >> 2); 
         }
-    }
+        return h;
+    }   
+};
+
+struct ArrayHasher2 {
+    std::size_t operator()(const std::array<int, 3>& a) const {
+        std::size_t h = 0;
+
+        for (auto e : a) {
+            h ^= std::hash<int>{}(e)  + 0x9e3779b9 + (h << 6) + (h >> 2); 
+        }
+        return h;
+    }   
+};
+
+
+unordered_map<array<int, 2>, vector<int*>, ArrayHasher> matches;
+unordered_map<array<int, 3>, vector<int*>, ArrayHasher2> double_matches;
+int ** board, *pieces, r, c;
+
+int sum(int * counts){
+    int s = 0;
+    for (int i = 0; i < 1000; i++)
+        s+=counts[i];
+    return s;
 }
 
-std::string get_key(int a, int b){
-    std::stringstream sa,sb;
-    sa << std::setw(3) << std::setfill('0') << a;
-    sb << std::setw(3) << std::setfill('0') << b;
-    sa << sb.str();
-    return sa.str();
-}
-
-void print_board(int * board, int r, int c, int pieces[][6]){
-    for ( int i = 0; i < r; i++){
-        for ( int l = 0; l < 2; l++){
-            for (int j = 0; j < c; j++){
-                int index = i*c + j;
-                int rot = 4-pieces[board[index]][4];
+void print_board(int ** board){
+    int i, j, l, *piece, rot;
+    for ( i = 0; i < r; i++){
+        for ( l = 0; l < 2; l++){
+            for (j = 0; j < c; j++){
+                piece = board[i*c + j];
+                rot = 4 - piece[4];
                 if (l == 0)
-                    std::cout<<pieces[board[index]][rot%4]<<" "<<pieces[board[index]][(rot+1)%4];
+                    std::cout<<piece[rot%4]<<" "<<piece[(rot+1)%4];
                 else
-                    std::cout<<pieces[board[index]][(rot+3)%4]<<" "<<pieces[board[index]][(rot+2)%4];
+                    std::cout<<piece[(rot+3)%4]<<" "<<piece[(rot+2)%4];
                 
                 if(j!=c-1)
                     std::cout<<"  ";
@@ -58,106 +70,100 @@ void print_board(int * board, int r, int c, int pieces[][6]){
     
 }
 
-std::string get_current_match(int * board, int c, int next_empty, int pieces[][6]){
-    int r_now, c_now, p1, p2, rot, index;
+array<int, 2> get_current_match(int next_empty){
+    int r_now, c_now, *piece;
     r_now = (next_empty - 1)/c;
     c_now = (next_empty - 1)%c;
+
     if (c_now == c-1){
-        index = board[r_now*c];
-        rot = 4 - pieces[index][4];
-        p1 = pieces[index][ (2+rot)%4 ];
-        p2 = pieces[index][ (3+rot)%4 ];
-        return get_key(p1, p2);
+        piece = board[r_now*c];
+        return {piece[ (6-piece[4])%4 ], piece[ (7-piece[4])%4 ]};
+
     }else{
-        index = board[r_now*c + c_now];
-        rot = 4 - pieces[index][4];
-        p1 = pieces[index][ (1+rot)%4 ];
-        p2 = pieces[index][ (2+rot)%4 ];
-        return get_key(p1, p2);
+        piece = board[r_now*c + c_now];
+        return {piece[ (5-piece[4])%4 ], piece[ (6-piece[4])%4 ]};
     }
 }
 
-bool fits(int * board, int c, int next_empty, int pieces[][6], int index, int rot_in){
-    int r_now, c_now, rot, b_index;
+array<int,3> get_current_double_match(int next_empty){
+    int r_now, c_now, *piece_up, *piece_left;
+    r_now = (next_empty - 1)/c;
+    c_now = (next_empty - 1)%c;
+
+    piece_up = board[(r_now-1) * c + c_now+1];
+    piece_left = board[r_now * c + c_now];
+    return {piece_up[(6-piece_up[4])%4], piece_up[(7-piece_up[4])%4], piece_left[(6-piece_left[4])%4]};
+}
+
+bool fits(int next_empty, int * ip, int rot_in){
+    int r_now, c_now, rot, *bp;
     r_now = next_empty/c;
     c_now = next_empty%c;
-
     if ( r_now == 0){
-        b_index = c_now - 1;
-        rot = 4 - pieces[board[b_index]][4];
-
-        bool l1 = (pieces[index][(4 - rot_in)%4] == pieces[board[b_index]][(1+rot)%4]);
-        bool l2 = (pieces[index][(7 - rot_in)%4] == pieces[board[b_index]][(2+rot)%4]);
-        return l1 && l2 ;   
+        bp = board[c_now - 1];
+        rot = 4 - bp[4];
+        //left 1 and left 2
+        return (ip[(4 - rot_in)%4] == bp[(1+rot)%4]) && (ip[(7 - rot_in)%4] == bp[(2+rot)%4]) ;   
     }
     if ( c_now == 0){
-        b_index = (r_now-1) * c;
-        rot = 4-pieces[board[b_index]][4];
-        
-        bool u1 = (pieces[index][(4 - rot_in)%4] == pieces[board[b_index]][(3 + rot)% 4]);
-        bool u2 = (pieces[index][(5 - rot_in)%4] == pieces[board[b_index]][(2 + rot)%4]);
-        return  u1 && u2; 
+        bp = board[(r_now-1)*c];
+        rot = 4 - bp[4];
+        //up 1 and up 2
+        return  (ip[(4 - rot_in)%4] == bp[(3 + rot)% 4]) && (ip[(5 - rot_in)%4] == bp[(2 + rot)%4]); 
     }
     
-    b_index = r_now * c + c_now - 1;
-    rot = 4-pieces[board[b_index]][4];
-
-    bool l1 = (pieces[index][(4 - rot_in)%4] == pieces[board[b_index]][(1+rot)%4]);
-    bool l2 = (pieces[index][(7 - rot_in)%4] == pieces[board[b_index]][(2+rot)%4]);
+    bp = board[r_now * c + c_now - 1];
+    rot = 4-bp[4];
     
-    b_index = (r_now-1) * c + c_now;
-    rot = 4-pieces[board[b_index]][4];
+    bool l1 = (ip[(4 - rot_in)%4] == bp[(1+rot)%4]);
+    bool l2 = (ip[(7 - rot_in)%4] == bp[(2+rot)%4]);
+    
+    bp = board[(r_now-1) * c + c_now];
+    rot = 4-bp[4];
 
-    bool u1 = (pieces[index][(4 - rot_in)%4] == pieces[board[b_index]][(3 + rot)% 4]);
-    bool u2 = (pieces[index][(5 - rot_in)%4] == pieces[board[b_index]][(2 + rot)%4]);
+    bool u1 = (ip[(4 - rot_in)%4] == bp[(3 + rot)% 4]);
+    bool u2 = (ip[(5 - rot_in)%4] == bp[(2 + rot)%4]);
     return l1&&l2&&u1&&u2;
 }
 
-void insert(int * board, int c, int next_empty, int index){
-    int r_now, c_now;
-    
-    r_now = next_empty/c;
-    c_now = next_empty%c;
 
-    board[r_now*c+c_now] = index;
-}
-
-void pop(int * board, int c, int next_empty){
-    int r_now, c_now;
-    r_now = next_empty/c;
-    c_now = next_empty%c;
-    
-    board[r_now*c+c_now] = -1;
-}
-
-bool solve(int * board, int r, int c, int next_empty, int pieces[][6]){
-    /*for(int i = 0; i < r; i++){
-        for (int j = 0; j < c; j++)
-            cout<<board[i*c+j]<<" ";
-        cout<<"\n";
-    }*/
+bool solve(int next_empty){
     if (next_empty == r*c)
         return true;
-    
-    std::string match = get_current_match(board, c, next_empty, pieces);
-    //cout<<"match: "<<match<<"\n";
-    bool result;
-    for(int index: matches[match]){
-        if (pieces[index][5] == 0){
-            for (int rot = 0; rot < 4; rot++){
-                //cout<<rot<<"\n";
-                if (fits(board, c, next_empty, pieces, index, rot) == 1){
-                    pieces[index][4] = rot;
-                    pieces[index][5] = 1;
-                    insert(board, c, next_empty, index);
+    int r_now, c_now;
+    r_now = next_empty/c;
+    c_now = next_empty%c;
+    if (c_now==0 || r_now == 0){
+        array<int,2> match = get_current_match(next_empty);
+        //cout<<"match: "<<match<<"\n";
 
-                    result = solve(board, r, c, next_empty + 1, pieces);
-                    if (result)
-                        return true;
-                    
-                    pieces[index][4] = 0;
-                    pieces[index][5] = 0;
-                    pop(board, c, next_empty);
+        for(int * piece: matches[match]){
+            if (piece[5] == 0){
+                for (int rot = 0; rot < 4; rot++){
+                    if (fits(next_empty, piece, rot) == 1){
+                        piece[4] = rot;
+                        piece[5] = 1;
+                        board[next_empty/c*c+next_empty%c] = piece;                    
+                        if ( solve(next_empty + 1) )
+                            return true;
+                        piece[5] = 0;
+                    }
+                }
+            }
+        }
+    }else{
+        array<int, 3> match = get_current_double_match(next_empty);
+        for(int * piece: double_matches[match]){
+            if (piece[5] == 0){
+                for (int rot = 0; rot < 4; rot++){
+                    if (fits(next_empty, piece, rot) == 1){
+                        piece[4] = rot;
+                        piece[5] = 1;
+                        board[next_empty/c*c+next_empty%c] = piece;                    
+                        if ( solve(next_empty + 1) )
+                            return true;
+                        piece[5] = 0;
+                    }
                 }
             }
         }
@@ -165,44 +171,110 @@ bool solve(int * board, int r, int c, int next_empty, int pieces[][6]){
     return false;
 }
 
+void print_vector(vector<int * > p){
+    for (auto &el: p){
+        std::cout<<el<<" ";
+    }
+    cout<<"\n";
+}
+
+void print_list(int * p){
+    for (int i = 0; i < r*c; i++){
+        std::cout<<p[i*6]<<" ";
+    }
+    cout<<"\n";
+}
+
 int main(){
     std::ios_base::sync_with_stdio(0);
     std::cin.tie(0);
-
-    int _, n, r, c, p1,p2,p3,p4;
-    std::cin >> _;
-
-    for (int i = 0; i < _; i++){
+    int cases, n, p1,p2,p3,p4, j , i, index;
+    std::cin >> cases;
+    for (i = 0; i < cases; i++){
+        matches.clear();
+        double_matches.clear();
 
         std::cin>>n>>r>>c;
-        int pieces[n][6];
+        pieces = new int[n*6];
+
+        int counts[1000] = {0};
 
         std::cin>>p1>>p2>>p3>>p4;
-        create_piece(p1, p2, p3, p4, 0, pieces);
+        pieces[0] = p1;
+        pieces[1] = p2;
+        pieces[2] = p3;
+        pieces[3] = p4;
+        pieces[4] = 0; //rotação
+        pieces[5] = 0;
 
-        int * board = new int[r*c];
+        counts[p1] = (counts[p1]+1)%2;
+        counts[p2] = (counts[p2]+1)%2;
+        counts[p3] = (counts[p3]+1)%2;
+        counts[p4] = (counts[p4]+1)%2;
 
-        fill(r, c, board);
-        
-        board[0] = 0;
-
-        for (int j = 0; j < n - 1; j++){
+        board = new int*[r*c];
+        board[0] = pieces;
+        for (j = 1; j < n; j++){
+            index = j * 6;
             std::cin>>p1>>p2>>p3>>p4;
-            create_piece(p1, p2, p3, p4, j + 1, pieces);
 
-            //std::cout<<get_key(p2,p1)<<"\n";
-            matches[get_key(p1, p4)].push_back(j+1);
-            matches[get_key(p4, p3)].push_back(j+1);
-            matches[get_key(p3, p2)].push_back(j+1);
-            matches[get_key(p2, p1)].push_back(j+1);
+            pieces[index]   = p1;
+            pieces[index+1] = p2;
+            pieces[index+2] = p3;
+            pieces[index+3] = p4;
+            pieces[index+4] = 0; //rotação
+            pieces[index+5] = 0;
+
+            counts[p1] = (counts[p1]+1)%2;
+            counts[p2] = (counts[p2]+1)%2;
+            counts[p3] = (counts[p3]+1)%2;
+            counts[p4] = (counts[p4]+1)%2;
+
+            if (matches.count({p1,p2})==0)
+                matches.insert(pair<array<int,2>, vector<int *>>({p1,p4}, {}));
+            matches[{p1, p4}].push_back( (pieces+j*6) );
+
+            if (matches.count({p4,p3})==0)
+                matches.insert(pair<array<int,2>, vector<int *>>({p4,p3}, {}));
+            matches[{p4, p3}].push_back( (pieces+j*6) );
+            
+            if (matches.count({p3,p2})==0)
+                matches.insert(pair<array<int,2>, vector<int *>>({p3,p2}, {}));
+            matches[{p3, p2}].push_back( (pieces+j*6) );
+            
+            if (matches.count({p2,p1})==0)
+                matches.insert(pair<array<int,2>, vector<int *>>({p2,p1}, {}));
+            matches[{p2, p1}].push_back( (pieces+j*6) );
+
+            if (double_matches.count({p2, p1, p4})==0)
+                double_matches.insert(pair<array<int,3>, vector<int *>>({p2, p1, p4}, {}));
+            double_matches[{p2, p1, p4}].push_back( (pieces+j*6) );
+
+            if (double_matches.count({p1, p4, p3})==0)
+                double_matches.insert(pair<array<int, 3>, vector<int *>>({p1, p4, p3}, {}));
+            double_matches[{p1,p4, p3}].push_back( (pieces+j*6) );
+            
+            if (double_matches.count({p4, p3,p2})==0)
+                double_matches.insert(pair<array<int,3>, vector<int *>>({p4, p3,p2}, {}));
+            double_matches[{p4,p3,p2}].push_back( (pieces+j*6) );
+            
+            if (double_matches.count({p3,p2,p1})==0)
+                double_matches.insert(pair<array<int,3>, vector<int *>>({p3,p2,p1}, {}));
+            double_matches[{p3,p2,p1}].push_back( (pieces+j*6) );
         }
-
-        if (solve(board, r, c, 1, pieces) == true){
-            print_board(board, r, c, pieces);
+        //auto start = chrono::steady_clock::now();
+        if (sum(counts)<=4 && solve(1) == true){
+            //auto end = chrono::steady_clock::now();
+            //cout<<chrono::duration_cast<chrono::milliseconds>(end - start).count()<<"\n";
+            print_board(board);
         }else{
+            //auto end = chrono::steady_clock::now();
+            //cout<<chrono::duration_cast<chrono::milliseconds>(end - start).count()<<"\n";
             std::cout<<"impossible puzzle!"<<"\n";
         }
+        delete[] pieces;
         delete[] board;
+        
     }
     return 0;
 }
