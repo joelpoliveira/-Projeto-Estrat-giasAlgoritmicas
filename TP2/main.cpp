@@ -15,9 +15,7 @@ using namespace std;
 
 int *values, 
     *graph,
-    *dp, 
-    cum_sum,
-    max_sum;
+    *dp;
 
 
 int min(int a, int b){
@@ -62,8 +60,6 @@ int main() {
     dp = new int[100000 * 2];
     graph = new int[100000 * 10];
 
-    cum_sum = 0;
-    max_sum  = 0;
     memset(values, 0, sizeof(int) * 100000);
     memset(dp, -1, sizeof(int) * 200000);
     memset(graph, -1, sizeof(int) * 1000000);
@@ -76,7 +72,6 @@ int main() {
             cout<<min(resolve(0, 0), resolve(0,1))<<"\n";
 
             //reset data;
-            max_sum = 0;
             memset(values, 0, sizeof(int) * 100000);
             memset(dp, -1, sizeof(int) * 100000);
             memset(graph, -1, sizeof(int) * 1000000);
