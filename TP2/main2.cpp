@@ -12,9 +12,7 @@
 using namespace std;
 
 int *values, 
-    *graph,
-    cum_sum,
-    max_sum;
+    *graph;
 
 pair<int, int> *dp;
 
@@ -27,17 +25,6 @@ pair<int,int> min(pair<int,int> a, pair<int,int> b){
         return b;
     }
     return b;
-}
-
-int is_better(pair<int, int> a, pair<int,int> b){
-    if (a.first<b.first)
-        return 1;
-    else if (a.first==b.first){
-        if (a.second>b.second)
-            return 1;
-        return 0;
-    }
-    return 0;
 }
 
 pair<int,int> resolve(int node_now, int is_watched){
@@ -91,8 +78,6 @@ int main() {
     dp = new pair<int,int>[100000 * 2];
     graph = new int[100000 * 10];
 
-    cum_sum = 0;
-    max_sum  = 0;
     for(i = 0; i < 100000; i++) values[i] = 0;
     for(i = 0; i < 200000; i++) dp[i] = {-1,-1};
     for(i = 0; i < 1000000; i++) graph[i] = -1;
@@ -106,7 +91,6 @@ int main() {
             cout<<res.first<<" "<<res.second<<"\n";
 
             //reset data;
-            max_sum = 0;
             for(i = 0; i < 100000; i++) values[i] = 0;
             for(i = 0; i < 200000; i++) dp[i] = {-1,-1};
             for(i = 0; i < 1000000; i++) graph[i] = -1;
