@@ -1,69 +1,86 @@
-#include <iostream>
-#include <sstream>
-#include <unordered_set>
-#include <unordered_map>
-#include <utility>
-#include <vector>
-#include <string>
-#include <fstream>
-#include <iomanip>
 #include <array>
 #include <chrono>
+#include <fstream>
+#include <iomanip>
+#include <iostream>
+#include <istream>
+#include <sstream>
+#include <string>
+#include <unordered_map>
+#include <unordered_set>
+#include <utility>
+#include <vector>
+#include <cstring>
 using namespace std;
 
 int *values, 
-    *graph;
+    *graph,
+    *dp;
 
-pair<int, int> *dp;
-
-pair<int,int> min(pair<int,int> a, pair<int,int> b){
-    if (a.first<b.first)
-        return a;
-    else if (a.first==b.first){
-        if (a.second>b.second)
-            return a;
-        return b;
-    }
-    return b;
+int min(int a, int b){
+    return a<b?a:b;
 }
 
-pair<int,int> resolve(int node_now, int is_watched){
-    //cout<<"##DEBUG##\n"<<node_now<<" "<<is_watched<<"\n"
-    //<<dp[2].second<<" "<<dp[8].second<<"\n##DEBUG##\n";
-    int graph_index = node_now * 10, dp_index = node_now*2;
+int resolve(int node_now, int is_watcher){
+    int graph_index = node_now * 10, dp_index = node_now*4;
+    
+    //if is leaf
     if (graph[graph_index]==-1){
-        if (is_watched){
-            return {is_watched, values[node_now]};
-        return {is_watched, 0};
+        if (is_watcher){
+            dp[dp_index + 3] = values[node_now];
+        }else{
+            dp[dp_index + 2] = 0;
         }
+        return is_watcher;
     }
-    else if(dp[dp_index + is_watched].first!=-1){
-        return dp[dp_index + is_watched];
+    else if(dp[dp_index + is_watcher]!=-1){
+        return dp[dp_index + is_watcher];
     }
 
-    int i, j;
-    pair <int,int> result = {0,0}, resp;
+    int res = 0, 
+        sum = 0, 
+        i, j, 
+        next_is_watcher, 
+        next_is_not,
+        next_dp_index;
+
     for (i = 0; i < 10; i++){
         j = graph_index+i;
         if (graph[j]==-1) break;
         
-        if (is_watched){
-            resp = min(resolve(graph[j], 1), resolve(graph[j], 0));
-            result.first+=resp.first;
-            result.second+=resp.second;
+        next_dp_index = graph[j]*4;
+
+        if (is_watcher){
+            next_is_watcher= resolve(graph[j], 1);
+            next_is_not    = resolve(graph[j], 0); 
+            if (next_is_watcher == next_is_not){
+                res+=next_is_watcher;
+
+                //if path uses same nodes, use the max valued;
+                if (dp[next_dp_index + 3] > dp[next_dp_index + 2]){
+                    sum+=dp[next_dp_index + 3];    
+                }else{
+                    sum+=dp[next_dp_index + 2];
+                }
+            }else if(next_is_watcher < next_is_not){
+                res+=next_is_watcher;
+                sum+=dp[next_dp_index + 3];
+            }else{
+                res+=next_is_not;
+                sum+=dp[next_dp_index + 2];
+            }
         }else{
-            resp=resolve(graph[j], 1);
-            result.first+=resp.first;
-            result.second+=resp.second;
+            res+=resolve(graph[j], 1);
+            sum+=dp[next_dp_index + 3];
         }
     }
+    dp[dp_index + is_watcher] = res + is_watcher;
+    if(is_watcher)
+        dp[dp_index + 3] = sum + values[node_now];
+    else
+        dp[dp_index + 2] = sum;
+    return dp[dp_index + is_watcher];
     
-    if (is_watched){
-        result.first +=is_watched;
-        result.second+=values[node_now];
-    }
-    dp[dp_index + is_watched] = result;
-    return dp[dp_index + is_watched];    
 }
 
 
@@ -74,31 +91,40 @@ int main() {
     int node_now, 
         other_node, 
         v_index,
-        i;
-    pair<int,int> res;
-    values = new int[100000];
-    dp = new pair<int,int>[200000];
-    graph = new int[1000000];
+        res0,res1;
 
-    for(i = 0; i < 100000; i++) values[i] = 0;
-    for(i = 0; i < 200000; i++) dp[i] = {-1,-1};
-    for(i = 0; i < 1000000; i++) graph[i] = -1;
+    values  = new int[100000];
+    dp      = new int[400000];
+    graph   = new int[1000000];
 
-    while (!cin.eof()) {
-        cin >> node_now;
+    memset(values, 0, sizeof(int) * 100000);
+    memset(dp,    -1, sizeof(int) * 400000);
+    memset(graph, -1, sizeof(int) * 1000000);
+
+    while (cin>>node_now) {
+        //cin >> node_now;
         v_index=0;
 
         if (node_now == -1){
-            if (graph[0]==-1){
-                cout<<1<<" "<<values[0]<<"\n";
+            res0=resolve(0, 0);
+            res1=resolve(0,1);
+            //cout<<dp[0]<<" "<<dp[1]<<" "<<dp[2]<<" "<<dp[3]<<"\n";
+            if (res0==res1){
+                if (dp[3]>dp[2]){
+                    cout<<res1<<" "<<dp[3]<<"\n";
+                }else{
+                    cout<<res0<<" "<<dp[2]<<"\n";
+                }
+            }else if (res0<res1){
+                cout<<res0<<" "<<dp[2]<<"\n";
             }else{
-                res = min(resolve(0, 0), resolve(0,1));
-                cout<<res.first<<" "<<res.second<<"\n";
+                cout<<res1<<" "<<dp[3]<<"\n";
             }
+
             //reset data;
-            for(i = 0; i < 100000; i++) values[i] = 0;
-            for(i = 0; i < 200000; i++) dp[i] = {-1,-1};
-            for(i = 0; i < 1000000; i++) graph[i] = -1;
+            memset(values, 0, sizeof(int) * 100000);
+            memset(dp,    -1, sizeof(int) * 400000);
+            memset(graph, -1, sizeof(int) * 1000000);
         }else{
             while( (cin>>other_node) ){
                 if ( cin.peek()=='\n' ){
@@ -112,9 +138,8 @@ int main() {
 
         }
     }
-
     delete [] values;
     delete [] dp;
     delete [] graph;
-  return 0;
+    return 0;
 }
