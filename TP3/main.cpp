@@ -43,8 +43,10 @@ int main() {
     }
   }
 
-  if (!check_valid())
+  if (!check_valid()) {
+    std::cout << "INVALID\n";
     return 0;
+  }
 
   // std::cout << "operation_time:\n";
   //   for (int i = 0; i < 1000; i++) {
