@@ -13,13 +13,34 @@
 #include <vector>
 using namespace std;
 
-int *operation_time;
+int *operation_time, *graph, n;
 
 bool check_valid() { return true; }
 
-void single_operation() {}
+void single_operation() {
+  // Greedy algorithm to select operation order
+  int time = 0;
+  for (int i = 0; i < n; i++) {
+      time += operation_time[i];
+      for (int j = 0; j < graph[i]; j++){
+          
+      }
+  }
+  std::cout << time << '\n';
+  // std::cout << 
+}
 
-void multi_operation() {}
+void multi_operation() {
+  // Find the operation that takes the longest
+  int best = 0;
+  for (int i = 0; i < n; i++) {
+    if (operation_time[i] > best) {
+      best = operation_time[i];
+    }
+  }
+  // return best;
+  std::cout << best << "\n";
+}
 
 void find_bottleneck() {}
 
@@ -30,7 +51,7 @@ int main() {
   operation_time = new int[1000];
   memset(operation_time, 0, sizeof(int) * 1000);
 
-  int n, m, op;
+  int m, op;
   std::cin >> n;
 
   for (int i = 0; i < n; i++) {
@@ -55,8 +76,8 @@ int main() {
   //     }
   //   }
 
-  std::cin >> n;
-  switch (n) {
+  std::cin >> m;
+  switch (m) {
   case 0:
     std::cout << "Operation 0\n";
     break;
