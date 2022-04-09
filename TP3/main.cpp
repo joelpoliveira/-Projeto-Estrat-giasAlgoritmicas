@@ -27,30 +27,30 @@ void print_graph() {
   std::cout << "\n";
 }
 
-int dfs(int node) {
+bool dfs(int node) {
   int child;
   marks[node] = 1;
 
-  // std::cout << "total children = " << graph[node * 1000] << "\n";
-
   for (int i = 0; i < graph[node * 1000]; i++) {
     child = graph[node * 1000 + 1 + i];
-    std::cout << "node: " << node << " child = " << child << "\n";
+    //std::cout << "node: " << node + 1 << " child = " << child + 1 << "\n";
 
-    if (marks[child] == 0)
-      return dfs(child);
+    // se vai a nó que já foi visitado, tem um ciclo
+    if (marks[child] == 1) {
+      std::cout << "Loop\n";
+      // return 0;
+    } else 
+      dfs(child);
 
-    // se vai a nó que já foi visitado, tem  um ciclo
-    else if (marks[child] == 1)
-      return 0;
   }
+
   return 1;
 }
 
 bool connectivity() {
-  std::cout << "n = " << n << " start_node = " << start_node << "\n";
+  std::cout << "n = " << n << " start_node = " << start_node + 1 << "\n";
 
-  memset(marks, 0, sizeof(int) * 1000);
+  memset(marks, 0, sizeof(int) * n);
 
   // se contem ciclo, é invalido
   if (dfs(start_node) == 0)
@@ -61,6 +61,7 @@ bool connectivity() {
   for (int i = 0; i < n; i++) {
     // se não é conexo, há nós que não foram visitados, a partir do primeiro
     if (marks[i] == 0) {
+      std::cout << "node " << i + 1 << " not marked\n";
       return 0;
     }
   }
@@ -80,7 +81,7 @@ bool check_valid() {
     }
   }
 
-  cout << "outdegree count = " << null_out_count << "\n";
+  // srd::cout << "outdegree count = " << null_out_count << "\n";
   if (null_out_count == 0) {
     return 0;
   }
@@ -97,7 +98,7 @@ void single_operation() {
 
       }
   }*/
-  memset(marks, 0, sizeof(int) * 1000);
+  memset(marks, 0, sizeof(int) * n);
   queue<int> q;
   marks[start_node] = 1;
   q.push(start_node);
@@ -149,7 +150,7 @@ int main() {
 
     if (m == 0) { // check for multiple start nodes
       if (start_declared) {
-        cout << "1 ";
+        // cout << "1 ";
         std::cout << "INVALID\n";
         return 0;
 
@@ -167,8 +168,8 @@ int main() {
         // insert into adjacency list
         graph[op * 1000 + 1 + aux] = i;
 
-        //std::cout << "Inserted: " << op + 1 << " - " << i + 1 << "\n";
-        //print_graph();
+        // std::cout << "Inserted: " << op + 1 << " - " << i + 1 << "\n";
+        // print_graph();
       }
     }
   }
@@ -195,14 +196,14 @@ int main() {
     break;
   case 1:
     std::cout << "Operation 1\n";
-    single_operation();
+    // single_operation();
     break;
   case 2:
-    multi_operation();
+    // multi_operation();
     std::cout << "Operation 2\n";
     break;
   case 3:
-    find_bottleneck();
+    // find_bottleneck();
     std::cout << "Operation 3\n";
     break;
   }
