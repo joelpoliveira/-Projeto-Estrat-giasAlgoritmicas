@@ -59,7 +59,7 @@ int check_valid() {
                 return 0;
         }
     }
-    //cout<<null_out_count<<"\n";
+    cout<<"outdegree count = "<<null_out_count<<"\n";
     if (null_out_count == 0){
         return 0;
     }
@@ -138,11 +138,13 @@ int main() {
             }
         }else{
             //assign outdegree
-            graph[i * 1000] = m;
+            
             for (j = 0; j < m; j++) {
                 std::cin >> op;
                 op--; //convert range [1, N] to [0, N-1]
 
+                //increment outdegree
+                graph[op * 1000]++;
                 //insertion sort ??
                 graph[i * 1000 + (1 + j)] = op;
             }
@@ -150,7 +152,6 @@ int main() {
     }
 
   if ( check_valid() == 0) {
-    cout<<"2 ";
     std::cout << "INVALID\n";
     return 0;
   }
