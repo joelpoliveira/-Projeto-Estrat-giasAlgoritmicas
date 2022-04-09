@@ -1,20 +1,22 @@
 #include <array>
 #include <chrono>
 #include <cstring>
+#include <deque>
 #include <fstream>
 #include <iomanip>
 #include <iostream>
 #include <istream>
-#include <queue>
 #include <sstream>
 #include <string>
 #include <unordered_map>
 #include <unordered_set>
 #include <utility>
 #include <vector>
+
 using namespace std;
 
 int *operation_time, *graph, *marks, start_node, end_node, n;
+deque<int> q;
 
 void print_graph() {
   for (int x = 0; x < n; x++) {
@@ -33,18 +35,30 @@ bool dfs(int node) {
 
   for (int i = 0; i < graph[node * 1000]; i++) {
     child = graph[node * 1000 + 1 + i];
-    //std::cout << "node: " << node + 1 << " child = " << child + 1 << "\n";
+    std::cout << "node: " << node + 1 << " child = " << child + 1 << "\n";
 
     // se vai a nó que já foi visitado, tem um ciclo
     if (marks[child] == 1) {
       std::cout << "Loop\n";
       // return 0;
-    } else 
+    } else
       dfs(child);
-
   }
 
   return 1;
+}
+
+// implementation of a topological sort with dfs
+void topological_dfs(int node) {
+  int child;
+  marks[node] = 1;
+
+  for (int i = 0; i < graph[node * 1000]; i++) {
+    child = graph[node * 1000 + 1 + i];
+    if (marks[child] == 0)
+      topological_dfs(child);
+  }
+  q.push_front(node + 1);
 }
 
 bool connectivity() {
@@ -90,30 +104,24 @@ bool check_valid() {
 }
 
 void single_operation() {
-  // Greedy algorithm to select operation order
-  /*int time = 0;
-  for (int i = 0; i < n; i++) {
-      time += operation_time[i];
-      for (int j = 0; j < graph[i]; j++){
-
-      }
-  }*/
   memset(marks, 0, sizeof(int) * n);
-  queue<int> q;
-  marks[start_node] = 1;
-  q.push(start_node);
 
-  int t, i; //, total_time = 0;
+  topological_dfs(start_node);
+
+  int total_time = 0;
+
+  for (int i = 0; i < n; i++){
+    total_time += operation_time[i];
+  }
+  
+  std::cout << total_time << '\n';
+
   while (!q.empty()) {
-    t = q.front();
-    q.pop();
-
-    for (i = 0; i < graph[t * 1000 + 1]; i++) {
-    }
+    std::cout << q.front();
+    q.pop_front();
+    std::cout << "\n";
   }
 
-  // std::cout << time << '\n';
-  //  std::cout <<
 }
 
 void multi_operation() {
@@ -195,8 +203,8 @@ int main() {
     std::cout << "VALID\n";
     break;
   case 1:
-    std::cout << "Operation 1\n";
-    // single_operation();
+    // std::cout << "Operation 1\n";
+    single_operation();
     break;
   case 2:
     // multi_operation();
