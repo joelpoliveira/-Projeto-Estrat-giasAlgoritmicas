@@ -11,27 +11,37 @@
 #include <unordered_set>
 #include <utility>
 #include <vector>
+#include <queue>
 using namespace std;
 
 int *operation_time, 
     *graph, 
     *marks,
+    start_node,
     n;
 
-void dfs(int node){
+int dfs(int node){
     int child;
     marks[node] = 1;
-    for (int i = 2; i < n+2; i++){
-        child = graph[node * 1000 + i];
+    for (int i = 0; i < graph[node*1000]; i++){
+        child = graph[node * 1000 + (i + 1)];
         if (marks[child]==0)
-            dfs( child );
+            return dfs( child );
+        //se vai a nó que já foi visitado, tem  um ciclo
+        else if(marks[child] == 1)
+            return 0;
     }
+    return 1;
 }
 
-int connectivity(int start_node){
+int connectivity(){
+    cout<<n<<" "<<start_node<<"\n";
     memset(marks, 0, sizeof(int) * 1000);
-    dfs(start_node);
+    //se contem ciclo, é invalido
+    if (dfs(start_node)== 0)
+        return 0;
     for (int i = 0; i < n; i++){
+        //se não é conexo, há nós que não foram visitados, a partir do primeiro
         if (marks[i] == 0){
             return 0;
         }
@@ -40,36 +50,48 @@ int connectivity(int start_node){
 }
 
 int check_valid() { 
-    int null_in_count, null_out_count, start_node=0;
-    null_in_count = null_out_count = 0;
-
+    int null_out_count = 0;
+    
     for (int i = 0; i < n; i++){
+        //if node_i out-degree is 0
         if (graph[i*1000]==0){
-            null_in_count++;
-            start_node = i;
+            if(++null_out_count!=1)
+                return 0;
         }
-
-        if (graph[i*1000 + 1]==0)
-            null_out_count++;
     }
-    cout<<null_in_count<<" "<<null_out_count<<"\n";
-    if (null_in_count != 1 || null_out_count != 1){
+    //cout<<null_out_count<<"\n";
+    if (null_out_count == 0){
         return 0;
     }
 
-    return connectivity(start_node);
+    return connectivity();
 }
 
 void single_operation() {
   // Greedy algorithm to select operation order
-  int time = 0;
+  /*int time = 0;
   for (int i = 0; i < n; i++) {
       time += operation_time[i];
       for (int j = 0; j < graph[i]; j++){
           
       }
-  }
-  std::cout << time << '\n';
+  }*/
+    memset(marks, 0, sizeof(int) * 1000);
+    queue<int> q;
+    marks[start_node] = 1;
+    q.push(start_node);
+
+    int t, i, total_time = 0;
+    while (!q.empty()){
+        t = q.front();
+        q.pop();
+
+        for ( i = 0; i < graph[t*1000 + 1]; i++){}
+    }
+
+
+
+  //std::cout << time << '\n';
   // std::cout << 
 }
 
@@ -92,33 +114,43 @@ int main() {
     std::cin.tie(0);
 
     operation_time = new int[1000];
-    graph = new int[102000];
+    graph = new int[101000];
     marks = new int[1000];
 
     memset(operation_time, 0, sizeof(int) * 1000);
-    memset(graph, 0, sizeof(int) * 102000);
+    memset(graph, 0, sizeof(int) * 101000);
     
     
-    int m, i, j, op;
+    int m, i, j, op, start_declared = 0;
     
     std::cin >> n;
     for (i = 0; i < n; i++) {
         std::cin >> operation_time[i] >> m;
 
-        
-        for (j = 0; j < m; j++) {
-            std::cin >> op;
-            op--;
-            //incremente node i outdegree
-            graph[i * 1000 + 1]++;
-            //increment node op indegree
-            graph[op * 1000]++;
-            graph[i * 1000 + 2 + j] = op;
+        if (m == 0){
+            if (start_declared==1){
+                cout<<"1 ";
+                cout << "INVALID\n";
+                return 0;
+            }else{
+                start_node = i;
+                start_declared = 1;
+            }
+        }else{
+            //assign outdegree
+            graph[i * 1000] = m;
+            for (j = 0; j < m; j++) {
+                std::cin >> op;
+                op--; //convert range [1, N] to [0, N-1]
+
+                //insertion sort ??
+                graph[i * 1000 + (1 + j)] = op;
+            }
         }
-    
     }
 
   if ( check_valid() == 0) {
+    cout<<"2 ";
     std::cout << "INVALID\n";
     return 0;
   }
