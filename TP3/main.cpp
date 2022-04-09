@@ -5,66 +5,87 @@
 #include <iomanip>
 #include <iostream>
 #include <istream>
+#include <queue>
 #include <sstream>
 #include <string>
 #include <unordered_map>
 #include <unordered_set>
 #include <utility>
 #include <vector>
-#include <queue>
 using namespace std;
 
-int *operation_time, 
-    *graph, 
-    *marks,
-    start_node,
-    n;
+int *operation_time, *graph, *marks, start_node, end_node, n;
 
-int dfs(int node){
-    int child;
-    marks[node] = 1;
-    for (int i = 0; i < graph[node*1000]; i++){
-        child = graph[node * 1000 + (i + 1)];
-        if (marks[child]==0)
-            return dfs( child );
-        //se vai a nó que já foi visitado, tem  um ciclo
-        else if(marks[child] == 1)
-            return 0;
+void print_graph() {
+  for (int x = 0; x < n; x++) {
+    std::cout << x + 1 << " -> ";
+    for (int y = 0; y < graph[x * 1000]; y++) {
+      std::cout << graph[x * 1000 + 1 + y] + 1 << " ";
     }
-    return 1;
+    std::cout << "\n";
+  }
+  std::cout << "\n";
 }
 
-int connectivity(){
-    cout<<n<<" "<<start_node<<"\n";
-    memset(marks, 0, sizeof(int) * 1000);
-    //se contem ciclo, é invalido
-    if (dfs(start_node)== 0)
-        return 0;
-    for (int i = 0; i < n; i++){
-        //se não é conexo, há nós que não foram visitados, a partir do primeiro
-        if (marks[i] == 0){
-            return 0;
-        }
-    }
-    return 1;
+int dfs(int node) {
+  int child;
+  marks[node] = 1;
+
+  // std::cout << "total children = " << graph[node * 1000] << "\n";
+
+  for (int i = 0; i < graph[node * 1000]; i++) {
+    child = graph[node * 1000 + 1 + i];
+    std::cout << "node: " << node << " child = " << child << "\n";
+
+    if (marks[child] == 0)
+      return dfs(child);
+
+    // se vai a nó que já foi visitado, tem  um ciclo
+    else if (marks[child] == 1)
+      return 0;
+  }
+  return 1;
 }
 
-int check_valid() { 
-    int null_out_count = 0;
-    
-    for (int i = 0; i < n; i++){
-        //if node_i out-degree is 0
-        if (graph[i*1000]==0){
-            if(++null_out_count!=1)
-                return 0;
-        }
+bool connectivity() {
+  std::cout << "n = " << n << " start_node = " << start_node << "\n";
+
+  memset(marks, 0, sizeof(int) * 1000);
+
+  // se contem ciclo, é invalido
+  if (dfs(start_node) == 0)
+    return 0;
+
+  std::cout << "did DFS\n";
+
+  for (int i = 0; i < n; i++) {
+    // se não é conexo, há nós que não foram visitados, a partir do primeiro
+    if (marks[i] == 0) {
+      return 0;
     }
-    cout<<"outdegree count = "<<null_out_count<<"\n";
-    if (null_out_count == 0){
+  }
+
+  return 1;
+}
+
+bool check_valid() {
+  int null_out_count = 0;
+
+  for (int i = 0; i < n; i++) {
+    // if node_i out-degree is 0
+    if (graph[i * 1000] == 0) {
+      end_node = i;
+      if (++null_out_count != 1)
         return 0;
     }
+  }
 
-    return connectivity();
+  cout << "outdegree count = " << null_out_count << "\n";
+  if (null_out_count == 0) {
+    return 0;
+  }
+
+  return connectivity();
 }
 
 void single_operation() {
@@ -73,26 +94,25 @@ void single_operation() {
   for (int i = 0; i < n; i++) {
       time += operation_time[i];
       for (int j = 0; j < graph[i]; j++){
-          
+
       }
   }*/
-    memset(marks, 0, sizeof(int) * 1000);
-    queue<int> q;
-    marks[start_node] = 1;
-    q.push(start_node);
+  memset(marks, 0, sizeof(int) * 1000);
+  queue<int> q;
+  marks[start_node] = 1;
+  q.push(start_node);
 
-    int t, i, total_time = 0;
-    while (!q.empty()){
-        t = q.front();
-        q.pop();
+  int t, i; //, total_time = 0;
+  while (!q.empty()) {
+    t = q.front();
+    q.pop();
 
-        for ( i = 0; i < graph[t*1000 + 1]; i++){}
+    for (i = 0; i < graph[t * 1000 + 1]; i++) {
     }
+  }
 
-
-
-  //std::cout << time << '\n';
-  // std::cout << 
+  // std::cout << time << '\n';
+  //  std::cout <<
 }
 
 void multi_operation() {
@@ -110,48 +130,53 @@ void multi_operation() {
 void find_bottleneck() {}
 
 int main() {
-    std::ios_base::sync_with_stdio(0);
-    std::cin.tie(0);
+  std::ios_base::sync_with_stdio(0);
+  std::cin.tie(0);
 
-    operation_time = new int[1000];
-    graph = new int[101000];
-    marks = new int[1000];
+  operation_time = new int[1000];
+  graph = new int[101000];
+  marks = new int[1000];
 
-    memset(operation_time, 0, sizeof(int) * 1000);
-    memset(graph, 0, sizeof(int) * 101000);
-    
-    
-    int m, i, j, op, start_declared = 0;
-    
-    std::cin >> n;
-    for (i = 0; i < n; i++) {
-        std::cin >> operation_time[i] >> m;
+  memset(operation_time, 0, sizeof(int) * 1000);
+  memset(graph, 0, sizeof(int) * 101000);
 
-        if (m == 0){
-            if (start_declared==1){
-                cout<<"1 ";
-                cout << "INVALID\n";
-                return 0;
-            }else{
-                start_node = i;
-                start_declared = 1;
-            }
-        }else{
-            //assign outdegree
-            
-            for (j = 0; j < m; j++) {
-                std::cin >> op;
-                op--; //convert range [1, N] to [0, N-1]
+  int m, i, j, op, aux;
+  bool start_declared = 0;
 
-                //increment outdegree
-                graph[op * 1000]++;
-                //insertion sort ??
-                graph[i * 1000 + (1 + j)] = op;
-            }
-        }
+  std::cin >> n;
+  for (i = 0; i < n; i++) {
+    std::cin >> operation_time[i] >> m;
+
+    if (m == 0) { // check for multiple start nodes
+      if (start_declared) {
+        cout << "1 ";
+        std::cout << "INVALID\n";
+        return 0;
+
+      } else {
+        start_node = i;
+        start_declared = 1;
+      }
+    } else {
+      for (j = 0; j < m; j++) {
+        std::cin >> op;
+        op--; // convert range [1, N] to [0, N-1]
+
+        // increment outdegree
+        aux = graph[op * 1000]++;
+        // insert into adjacency list
+        graph[op * 1000 + 1 + aux] = i;
+
+        //std::cout << "Inserted: " << op + 1 << " - " << i + 1 << "\n";
+        //print_graph();
+      }
     }
+  }
 
-  if ( check_valid() == 0) {
+  // Print list for debug
+  print_graph();
+
+  if (!check_valid()) {
     std::cout << "INVALID\n";
     return 0;
   }
