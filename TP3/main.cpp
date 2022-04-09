@@ -15,7 +15,7 @@
 
 using namespace std;
 
-int *operation_time, *graph, *marks, start_node, end_node, n;
+int *operation_time, *graph, *marks, start_node, end_node, n, total_time = 0;
 deque<int> q;
 
 void print_graph() {
@@ -59,6 +59,32 @@ void topological_dfs(int node) {
       topological_dfs(child);
   }
   q.push_front(node + 1);
+}
+
+void topological_dfs_2(int node) {
+  int child, temp = graph[node * 1000], best = 0;
+  marks[node] = 1;
+
+  for (int i = 0; i < temp; i++) {
+    child = graph[node * 1000 + 1 + i];
+
+    // If multiple operations can be done at once, sum which one takes the longest
+    // if (temp > 1) {
+    //   for (int j = 0; j < temp; j++) {
+    //     // std::cout << graph[node * 1000 + 1 + j] << "\n";
+    //     if (operation_time[graph[node * 1000 + 1 + j]] > best)
+    //       best = operation_time[graph[node * 1000 + 1 + j]];
+    //   }
+    //   total_time += best;
+    //   // std::cout << "------\n";
+    // } else {
+    //   total_time += operation_time[child];
+    // }
+
+    if (marks[child] == 0) {
+      topological_dfs_2(child);
+    }
+  }
 }
 
 bool connectivity() {
@@ -108,32 +134,24 @@ void single_operation() {
 
   topological_dfs(start_node);
 
-  int total_time = 0;
+  // for (int i = 0; i < n; i++){
+  //   total_time += operation_time[i];
+  // }
 
-  for (int i = 0; i < n; i++){
-    total_time += operation_time[i];
-  }
-  
   std::cout << total_time << '\n';
 
   while (!q.empty()) {
-    std::cout << q.front();
+    std::cout << q.front() << "\n";
     q.pop_front();
-    std::cout << "\n";
   }
-
 }
 
 void multi_operation() {
-  // Find the operation that takes the longest
-  int best = 0;
-  for (int i = 0; i < n; i++) {
-    if (operation_time[i] > best) {
-      best = operation_time[i];
-    }
-  }
-  // return best;
-  std::cout << best << "\n";
+  total_time = operation_time[start_node];
+
+  topological_dfs_2(start_node);
+
+  std::cout << total_time << "\n";
 }
 
 void find_bottleneck() {}
@@ -155,6 +173,9 @@ int main() {
   std::cin >> n;
   for (i = 0; i < n; i++) {
     std::cin >> operation_time[i] >> m;
+
+    // calculate total_time as input is read
+    total_time += operation_time[i];
 
     if (m == 0) { // check for multiple start nodes
       if (start_declared) {
@@ -190,13 +211,6 @@ int main() {
     return 0;
   }
 
-  // std::cout << "operation_time:\n";
-  //   for (int i = 0; i < 1000; i++) {
-  //     if (operation_time[i] != 0) {
-  //       std::cout << operation_time[i] << "\n";
-  //     }
-  //   }
-
   std::cin >> m;
   switch (m) {
   case 0:
@@ -207,7 +221,7 @@ int main() {
     single_operation();
     break;
   case 2:
-    // multi_operation();
+    multi_operation();
     std::cout << "Operation 2\n";
     break;
   case 3:
