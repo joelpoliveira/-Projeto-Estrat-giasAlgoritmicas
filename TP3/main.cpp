@@ -39,8 +39,8 @@ bool dfs(int node) {
 
     // se vai a nó que já foi visitado, tem um ciclo
     if (marks[child] == 1) {
-      std::cout << "Loop\n";
-      // return 0;
+      // std::cout << "Loop\n";
+      return 0;
     } else
       dfs(child);
   }
@@ -65,21 +65,18 @@ void topological_dfs_2(int node) {
   int child, temp = graph[node * 1000], best = 0;
   marks[node] = 1;
 
+  // Percorrer os filhos de node 
   for (int i = 0; i < temp; i++) {
     child = graph[node * 1000 + 1 + i];
 
-    // If multiple operations can be done at once, sum which one takes the longest
-    // if (temp > 1) {
-    //   for (int j = 0; j < temp; j++) {
-    //     // std::cout << graph[node * 1000 + 1 + j] << "\n";
-    //     if (operation_time[graph[node * 1000 + 1 + j]] > best)
-    //       best = operation_time[graph[node * 1000 + 1 + j]];
-    //   }
-    //   total_time += best;
-    //   // std::cout << "------\n";
-    // } else {
-    //   total_time += operation_time[child];
-    // }
+    // If multiple operations can be done at once, sum which one takes the
+    // longest
+    if (temp > 1) {
+      for (int j = 0; j < temp; j++) {
+
+      }
+  
+    }
 
     if (marks[child] == 0) {
       topological_dfs_2(child);
@@ -222,11 +219,11 @@ int main() {
     break;
   case 2:
     multi_operation();
-    std::cout << "Operation 2\n";
+    //std::cout << "Operation 2\n";
     break;
   case 3:
-    // find_bottleneck();
-    std::cout << "Operation 3\n";
+    find_bottleneck();
+    //std::cout << "Operation 3\n";
     break;
   }
 
