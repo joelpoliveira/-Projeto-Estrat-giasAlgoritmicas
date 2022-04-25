@@ -17,6 +17,7 @@ using namespace std;
 
 int *operation_time, *graph, *marks, start_node, end_node, n, total_time = 0;
 deque<int> q;
+int *recursion_stack;
 
 void print_graph() {
   for (int x = 0; x < n; x++) {
@@ -29,23 +30,28 @@ void print_graph() {
   std::cout << "\n";
 }
 
-
 bool dfs(int node) {
   int child;
+
   marks[node] = 1;
+  recursion_stack[node] = 1;
 
   for (int i = 0; i < graph[node * 1000]; i++) {
     child = graph[node * 1000 + 2 + i];
     std::cout << "node: " << node + 1 << " child = " << child + 1 << "\n";
 
-    // se vai a nó que já foi visitado, pode ter um ciclo
-    if (marks[child] == 1) {
-      std::cout << "Loop\n";
+    // Check for back edges
+    // If node is visited and in the stack, it is a back edge
+    // The graph can't have back edges 
+    if (marks[child] == 0) {
+      if (dfs(child) == 0)
+        return 0;
+    } else if (recursion_stack[child] == 1){ 
       return 0;
-    } else
-      dfs(child);
+    }
   }
 
+  recursion_stack[node] = 0; // remove node from stack
   return 1;
 }
 
@@ -63,7 +69,7 @@ void topological_dfs(int node) {
 }
 
 void topological_dfs_2(int node) {
-  int child, temp = graph[node * 1000], best = 0;
+  int child, temp = graph[node * 1000]; //, best = 0;
   marks[node] = 1;
 
   // Percorrer os filhos de node
@@ -83,16 +89,22 @@ void topological_dfs_2(int node) {
   }
 }
 
+void topological_sorting() {
+  deque<int> dq;
+
+  // Calculate indgrees
+}
+
 bool connectivity() {
   std::cout << "n = " << n << " start_node = " << start_node + 1 << "\n";
 
   memset(marks, 0, sizeof(int) * n);
 
   // se contem ciclo, é invalido
-  if (dfs(start_node) == 0) // TODO usar topology em vez de dfs 
+  if (dfs(start_node) == 0)
     return 0;
 
-  std::cout << "did DFS\n";
+  // std::cout << "did DFS\n";
 
   for (int i = 0; i < n; i++) {
     // se não é conexo, há nós que não foram visitados, a partir do primeiro
@@ -155,9 +167,11 @@ int main() {
   operation_time = new int[1000];
   graph = new int[101000];
   marks = new int[1000];
+  recursion_stack = new int[1000];
 
   memset(operation_time, 0, sizeof(int) * 1000);
   memset(graph, 0, sizeof(int) * 101000);
+  memset(recursion_stack, 0, sizeof(int) * 1000);
 
   /*
     graph[i * 1000] -> outdegree (number of children)
@@ -189,7 +203,7 @@ int main() {
         start_declared = 1;
       }
     } else {
-      // sort out connections 
+      // sort out connections
       for (j = 0; j < m; j++) {
         std::cin >> op;
         op--; // convert range from [1, N] to [0, N-1]
