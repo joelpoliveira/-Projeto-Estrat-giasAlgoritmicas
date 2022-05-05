@@ -12,6 +12,8 @@
 #include <unordered_set>
 #include <utility>
 #include <vector>
+#include <set>
+#include <queue>
 
 using namespace std;
 
@@ -23,7 +25,7 @@ int *operation_time, *graph, *marks, *recursion_stack, *dp, start_node,
     end_node, n, best, total_time;
 
 deque<int>  q, bottleneck;
-
+priority_queue<int, vector<int>, std::greater<int> > sorted_queue;
 
 int dfs(int node) {
   int i,j;
@@ -92,7 +94,7 @@ bool check_valid() {
   return connectivity();
 }
 
-
+/*
 void topological_dfs(int node) {
   int i,j;
   marks[node] = 1;
@@ -108,21 +110,23 @@ void topological_dfs(int node) {
   }
   q.push_front(node + 1);
 }
+*/
 
 void topological_bfs(){
     int current_node, i, j;
-    q.push_back(start_node);
+    sorted_queue.push(start_node);
 
-    while (!q.empty()){
-        current_node = q.front();
-        q.pop_front();
+    while (!sorted_queue.empty()){
+        current_node = sorted_queue.top();
+        sorted_queue.pop();
+        
         bottleneck.push_front(current_node+1);
 
         for (i = 0, j = 0; i < COL_SIZE-2; i++){
             if (graph[current_node * COL_SIZE + 2 + i] == 1){
                 j++;
                 if (--graph[i * COL_SIZE + 1] == 0){
-                    q.push_back(i);
+                    sorted_queue.push(i);
                 }
                 if (j >= graph[current_node * COL_SIZE])
                     break;
@@ -132,16 +136,16 @@ void topological_bfs(){
 }
 
 void single_operation() {
-  memset(marks, 0, sizeof(int) * n);
+    memset(marks, 0, sizeof(int) * n);
 
-  //topological_dfs(start_node);
+    //topological_dfs(start_node);
     topological_bfs();
-  std::cout << total_time << '\n';
+    std::cout << total_time << '\n';
 
-  while (!q.empty()) {
-    std::cout << q.front() << "\n";
-    q.pop_front();
-  }
+    while (!bottleneck.empty()) {
+        std::cout << bottleneck.back() << "\n";
+        bottleneck.pop_back();
+    }
 }
 
 
